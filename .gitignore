@@ -1,0 +1,48 @@
+# --- Dependencias ---
+node_modules/
+jspm_packages/
+typings/
+
+# --- Variables de Entorno (CRÍTICO) ---
+# Nunca subas tus credenciales de DB, puertos o secrets de JWT
+.env
+.env.test
+.env.production
+.env.local
+
+# --- Logs ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# --- Archivos de Base de Datos ---
+# Si usas SQLite para pruebas rápidas
+*.sqlite
+*.sqlite-journal
+
+# --- Archivos de Sistema y Editores ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# --- Cobertura de Tests ---
+coverage/
+.nyc_output
+
+# --- Archivos Temporales / Build ---
+dist/
+build/
+temp/
+tmp/
+
+# --- Documentación y PDFs Generados ---
+# Para que no se suban los tickets o reportes de ganadores que generes en desarrollo
+public/tickets/*.pdf
+public/reports/*.pdf
