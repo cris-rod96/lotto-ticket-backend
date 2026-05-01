@@ -6,4 +6,94 @@ const sq = new Sequelize(libsConfig.DATABASE_CONFIG.URI, libsConfig.DATABASE_CON
 
 models.forEach((m) => m(sq))
 
-export { sq }
+const {
+  Cajas,
+  Catalogos,
+  Cifras,
+  Clientes,
+  DetallesResultado,
+  DetallesTicket,
+  Movimientos,
+  PuntosVenta,
+  Resultados,
+  Roles,
+  Sorteos,
+  Suertes,
+  Tickets,
+  Usuarios,
+} = sq.models
+
+Roles.hasMany(Usuarios, { foreignKey: 'RolId' })
+Usuarios.belongsTo(Roles, { foreignKey: 'RolId' })
+
+PuntosVenta.hasMany(Usuarios, { foreignKey: 'PuntoVentaId' })
+Usuarios.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
+
+PuntosVenta.hasMany(Clientes, { foreignKey: 'PuntoVentaId' })
+Clientes.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
+
+Catalogos.hasMany(Sorteos, { foreignKey: 'CatalogoId' })
+Sorteos.belongsTo(Catalogos, { foreignKey: 'CatalogoId' })
+
+Cifras.hasMany(Sorteos, { foreignKey: 'CifraId' })
+Sorteos.belongsTo(Cifras, { foreignKey: 'CifraId' })
+
+Cifras.hasMany(Suertes, { foreignKey: 'CifraId' })
+Suertes.belongsTo(Cifras, { foreignKey: 'CifraId' })
+
+Sorteos.hasMany(Tickets, { foreignKey: 'SorteoId' })
+Tickets.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
+
+PuntosVenta.hasMany(Tickets, { foreignKey: 'PuntoVentaId' })
+Tickets.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
+
+Tickets.hasMany(DetallesTicket, { foreignKey: 'TicketId' })
+DetallesTicket.belongsTo(Tickets, { foreignKey: 'TicketId' })
+
+Usuarios.hasMany(Tickets, { foreignKey: 'UsuarioId' })
+Tickets.belongsTo(Usuarios, { foreignKey: 'UsuarioId' })
+
+Clientes.hasMany(Tickets, { foreignKey: 'ClienteId' })
+Tickets.belongsTo(Clientes, { foreignKey: 'ClienteId' })
+
+PuntosVenta.hasMany(Cajas, { foreignKey: 'PuntoVentaId' })
+Cajas.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
+
+Usuarios.hasMany(Cajas, { foreignKey: 'UsuarioId' })
+Cajas.belongsTo(Usuarios, { foreignKey: 'UsuarioId' })
+
+Cajas.hasMany(Movimientos, { foreignKey: 'CajaId' })
+Movimientos.belongsTo(Cajas, { foreignKey: 'CajaId' })
+
+PuntosVenta.hasMany(Movimientos, { foreignKey: 'PuntoVentaId' })
+Movimientos.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
+
+Usuarios.hasMany(Movimientos, { foreignKey: 'UsuarioId' })
+Movimientos.belongsTo(Usuarios, { foreignKey: 'Usuarios' })
+
+Sorteos.hasOne(Resultados, { foreignKey: 'SorteoId' })
+Resultados.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
+
+Resultados.hasMany(DetallesResultado, { foreignKey: 'ResultadoId' })
+DetallesResultado.belongsTo(Resultados, { foreignKey: 'ResultadoId' })
+
+Resultados.hasMany(Tickets, { foreignKey: 'TicketId' })
+Tickets.belongsTo(Resultados, { foreignKey: 'TicketId' })
+
+export {
+  Cajas,
+  Catalogos,
+  Cifras,
+  Clientes,
+  DetallesResultado,
+  DetallesTicket,
+  Movimientos,
+  PuntosVenta,
+  Resultados,
+  Roles,
+  Sorteos,
+  sq,
+  Suertes,
+  Tickets,
+  Usuarios,
+}
