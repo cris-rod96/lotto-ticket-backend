@@ -7,8 +7,8 @@ server.listen(envsConfig.PORT, () => {
 
   sq.sync({
     logging: false,
-    force: false,
-    alter: false,
+    force: true,
+    alter: true,
   })
     .then(() => {
       console.log('Base de datos sincronizada con éxito')

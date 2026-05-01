@@ -21,6 +21,7 @@ const {
   Suertes,
   Tickets,
   Usuarios,
+  SaldosCupo,
 } = sq.models
 
 Roles.hasMany(Usuarios, { foreignKey: 'RolId' })
@@ -79,6 +80,9 @@ DetallesResultado.belongsTo(Resultados, { foreignKey: 'ResultadoId' })
 
 Resultados.hasMany(Tickets, { foreignKey: 'TicketId' })
 Tickets.belongsTo(Resultados, { foreignKey: 'TicketId' })
+
+Sorteos.hasMany(SaldosCupo, { foreignKey: 'SorteoId' })
+SaldosCupo.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
 
 export {
   Cajas,

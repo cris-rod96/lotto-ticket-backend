@@ -17,6 +17,12 @@ const CifraModel = (sq) => {
           min: 2,
         },
       },
+
+      cupoMaximoPorNumero: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.0,
+      },
     },
     {
       tableName: 'Cifras',

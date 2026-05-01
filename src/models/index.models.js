@@ -8,6 +8,7 @@ import MovimientoModel from './movimiento/movimiento.model.js'
 import PuntoVentaModel from './punto-venta/puntoVenta.model.js'
 import ResultadoModel from './resultado/resultado.model.js'
 import RolModel from './rol/rol.model.js'
+import SaldoCupoModel from './saldo-cupo/saldoCupo.model.js'
 import SorteoModel from './sorteo/sorteo.model.js'
 import SuerteModel from './suerte/suerte.model.js'
 import TicketModel from './ticket/ticket.model.js'
@@ -28,4 +29,5 @@ export const models = [
   ResultadoModel,
   DetalleResultadoModel,
   ClienteModel,
+  SaldoCupoModel,
 ]
