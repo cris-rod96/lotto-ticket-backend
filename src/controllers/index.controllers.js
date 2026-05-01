@@ -1,3 +1,3 @@
 import catalogoControllers from './catalogo/index.controller.js'
-
-export { catalogoControllers }
+import cifraControllers from './cifra/index.controller.js'
+export { catalogoControllers, cifraControllers }
