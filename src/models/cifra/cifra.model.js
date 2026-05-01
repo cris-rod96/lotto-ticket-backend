@@ -18,6 +18,11 @@ const CifraModel = (sq) => {
         },
       },
 
+      activo: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+      },
+
       cupoMaximoPorNumero: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
