@@ -20,6 +20,11 @@ const SuerteModel = (sq) => {
         allowNull: false,
       },
 
+      activo: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+      },
+
       CifraId: {
         type: DataTypes.UUID,
         allowNull: false,
