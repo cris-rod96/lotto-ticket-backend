@@ -21,6 +21,11 @@ const CatalogoModel = (sq) => {
         values: ['EC', 'AR'],
         allowNull: false,
       },
+
+      activo: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+      },
     },
     {
       timestamps: true,
