@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import cajaRouter from './caja/caja.route.js'
 import catalogoRouter from './catalogo/catalogo.route.js'
 import cifraRouter from './cifra/cifra.route.js'
 import movimientoRouter from './movimiento/movimiento.route.js'
@@ -16,4 +17,5 @@ rootRouter.use('/suertes', suerteRouter)
 rootRouter.use('/puntos-ventas', puntoVentaRouter)
 rootRouter.use('/movimientos', movimientoRouter)
 rootRouter.use('/usuarios', usuarioRouter)
+rootRouter.use('/cajas', cajaRouter)
 export default rootRouter

@@ -18,6 +18,7 @@ const MovimientoModel = (sq) => {
 
       categoria: {
         type: DataTypes.ENUM(
+          'Bancos',
           'Venta Ticket',
           'Pago Premio',
           'Anulacion',
