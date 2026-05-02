@@ -3,6 +3,7 @@ import catalogoControllers from './catalogo/index.controller.js'
 import cifraControllers from './cifra/index.controller.js'
 import movimientoControllers from './movimiento/index.controller.js'
 import puntoVentaControllers from './punto-venta/index.controller.js'
+import resultadoControllers from './resultado/index.controller.js'
 import rolControllers from './rol/index.controller.js'
 import sorteoControllers from './sorteo/index.controller.js'
 import suerteControllers from './suerte/index.controller.js'
@@ -14,6 +15,7 @@ export {
   cifraControllers,
   movimientoControllers,
   puntoVentaControllers,
+  resultadoControllers,
   rolControllers,
   sorteoControllers,
   suerteControllers,

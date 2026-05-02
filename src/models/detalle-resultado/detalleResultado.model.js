@@ -32,9 +32,6 @@ const DetalleResultadoModel = (sq) => {
       cantidadGanadores: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        validate: {
-          min: 1,
-        },
       },
 
       ResultadoId: {

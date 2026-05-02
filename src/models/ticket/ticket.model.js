@@ -32,10 +32,16 @@ const TicketModel = (sq) => {
         allowNull: true,
       },
 
-      referencia: {
+      montoTotalPremio: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
+        allowNull: false,
+        defaultValue: 0.0,
       },
+
+      // referencia: {
+      //   type: DataTypes.DECIMAL(10, 2),
+      //   allowNull: true,
+      // },
 
       SorteoId: {
         type: DataTypes.UUID,
