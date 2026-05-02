@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import authRouter from './auth/auth.route.js'
 import cajaRouter from './caja/caja.route.js'
 import catalogoRouter from './catalogo/catalogo.route.js'
 import cifraRouter from './cifra/cifra.route.js'
@@ -22,4 +23,5 @@ rootRouter.use('/usuarios', usuarioRouter)
 rootRouter.use('/cajas', cajaRouter)
 rootRouter.use('/sorteos', sorteoRouter)
 rootRouter.use('/tickets', ticketRouter)
+rootRouter.use('/auth', authRouter)
 export default rootRouter

@@ -1,3 +1,4 @@
+import authControllers from './auth/auth.controller.js'
 import cajaControllers from './caja/index.controller.js'
 import catalogoControllers from './catalogo/index.controller.js'
 import cifraControllers from './cifra/index.controller.js'
@@ -9,7 +10,9 @@ import sorteoControllers from './sorteo/index.controller.js'
 import suerteControllers from './suerte/index.controller.js'
 import ticketControllers from './ticket/index.controller.js'
 import usuarioControllers from './usuario/index.controller.js'
+
 export {
+  authControllers,
   cajaControllers,
   catalogoControllers,
   cifraControllers,
