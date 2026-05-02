@@ -4,6 +4,7 @@ import movimientoServices from './movimiento/index.service.js'
 import puntoVentaServices from './punto-venta/index.service.js'
 import rolServices from './rol/index.service.js'
 import suerteServices from './suerte/index.service.js'
+import usuarioServices from './usuario/index.service.js'
 
 export {
   catalogoService,
@@ -12,4 +13,5 @@ export {
   puntoVentaServices,
   rolServices,
   suerteServices,
+  usuarioServices,
 }

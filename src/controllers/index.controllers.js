@@ -4,6 +4,7 @@ import movimientoControllers from './movimiento/index.controller.js'
 import puntoVentaControllers from './punto-venta/index.controller.js'
 import rolControllers from './rol/index.controller.js'
 import suerteControllers from './suerte/index.controller.js'
+import usuarioControllers from './usuario/index.controller.js'
 export {
   catalogoControllers,
   cifraControllers,
@@ -11,4 +12,5 @@ export {
   puntoVentaControllers,
   rolControllers,
   suerteControllers,
+  usuarioControllers,
 }
