@@ -28,6 +28,11 @@ const CifraModel = (sq) => {
         allowNull: false,
         defaultValue: 0.0,
       },
+
+      valorMinimoTicket: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+      },
     },
     {
       tableName: 'Cifras',

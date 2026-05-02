@@ -9,7 +9,7 @@ server.listen(envsConfig.PORT, () => {
 
   sq.sync({
     logging: false,
-    force: false,
+    force: true,
     alter: true,
   })
     .then(() => {

@@ -7,6 +7,7 @@ import puntoVentaRouter from './punto-venta/puntoVenta.route.js'
 import rolRouter from './rol/rol.route.js'
 import sorteoRouter from './sorteo/sorteo.route.js'
 import suerteRouter from './suerte/suerte.route.js'
+import ticketRouter from './ticket/ticket.route.js'
 import usuarioRouter from './usuario/usuario.route.js'
 
 const rootRouter = Router()
@@ -20,4 +21,5 @@ rootRouter.use('/movimientos', movimientoRouter)
 rootRouter.use('/usuarios', usuarioRouter)
 rootRouter.use('/cajas', cajaRouter)
 rootRouter.use('/sorteos', sorteoRouter)
+rootRouter.use('/tickets', ticketRouter)
 export default rootRouter

@@ -3,10 +3,12 @@ export const CIFRAS = [
   {
     cantidad: 2,
     cupoMaximoPorNumero: 15.0,
+    valorMinimoTicket: 0.25,
   },
   {
     cantidad: 3,
     cupoMaximoPorNumero: 2.0,
+    valorMinimoTicket: 0.25,
   },
 ]
 

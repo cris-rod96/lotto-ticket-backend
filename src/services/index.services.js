@@ -6,6 +6,7 @@ import puntoVentaServices from './punto-venta/index.service.js'
 import rolServices from './rol/index.service.js'
 import sorteoServices from './sorteo/index.service.js'
 import suerteServices from './suerte/index.service.js'
+import ticketServices from './ticket/index.service.js'
 import usuarioServices from './usuario/index.service.js'
 
 export {
@@ -17,5 +18,6 @@ export {
   rolServices,
   sorteoServices,
   suerteServices,
+  ticketServices,
   usuarioServices,
 }

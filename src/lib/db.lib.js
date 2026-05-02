@@ -95,6 +95,7 @@ export {
   PuntosVenta,
   Resultados,
   Roles,
+  SaldosCupo,
   Sorteos,
   sq,
   Suertes,
