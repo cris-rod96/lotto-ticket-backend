@@ -3,8 +3,8 @@ import { cifraServices } from '../../services/index.services.js'
 const actualizarCupoMaximo = async (req, res) => {
   try {
     const { id } = req.params
-    const { cupoMaximo } = req.body
-    const { code, message } = await cifraServices.actualizarCupoMaximo(id, cupoMaximo)
+    const { cupoMaximoPorNumero } = req.body
+    const { code, message } = await cifraServices.actualizarCupoMaximo(id, cupoMaximoPorNumero)
     res.status(code).json({ message })
   } catch (error) {
     const msg =

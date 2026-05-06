@@ -1,11 +1,11 @@
 import envsConfig from '../config/envs.config.js'
 import { CIFRAS, ROLES, SUERTES_2_CIFRAS, SUERTES_3_CIFRAS, USUARIO_TEST } from '../data/data.js'
-import { Cifras, Roles, Suertes, Usuarios } from '../lib/db.lib.js'
+import { Cifras, PuntosVenta, Roles, Suertes, Usuarios } from '../lib/db.lib.js'
 import { bcrypUtils } from '../utils/index.utils.js'
 
 export const cargarDatos = async () => {
   try {
-    console.log('Iniciando carga de datos por defecto...')
+    // 1. Cargar Roles y crear el mapa de IDs
     const rolesMap = {}
     for (const rol of ROLES) {
       const [registro, creado] = await Roles.findOrCreate({
@@ -16,47 +16,61 @@ export const cargarDatos = async () => {
       rolesMap[rol.nombre] = registro.id
     }
 
-    const claveHasheada = await bcrypUtils.hashearClave(envsConfig.PASSWORD_ADMIN_DEFAULT)
-
-    await Usuarios.findOrCreate({
-      where: {
-        alias: USUARIO_TEST.alias,
-      },
+    // 2. CREAR PUNTO DE VENTA INICIAL (Ajustado a tu modelo: nombre, ubicacion, activo)
+    const [puntoPrincipal, puntoCreado] = await PuntosVenta.findOrCreate({
+      where: { nombre: 'MATRIZ PRINCIPAL' },
       defaults: {
-        nombresCompletos: USUARIO_TEST.nombresCompletos,
-        alias: USUARIO_TEST.alias,
-        clave: claveHasheada,
-        RolId: rolesMap[USUARIO_TEST.rolNombre],
+        nombre: 'MATRIZ PRINCIPAL',
+        ubicacion: 'GUAYAQUIL, ECUADOR',
+        activo: true, // Usando el campo 'activo' de tu modelo
       },
     })
+    if (puntoCreado) console.log('Punto de Venta Matriz creado exitosamente.')
 
+    const claveHasheada = await bcrypUtils.hashearClave(envsConfig.PASSWORD_ADMIN_DEFAULT)
+
+    // 3. MAPEAR USUARIOS CON LÓGICA DE PUNTO DE VENTA
+    for (const user of USUARIO_TEST) {
+      // Verificamos si es administrador (ignorando mayúsculas/minúsculas)
+      const esAdmin = user.rolNombre.match(/admin/i)
+
+      await Usuarios.findOrCreate({
+        where: {
+          alias: user.alias,
+        },
+        defaults: {
+          nombresCompletos: user.nombresCompletos,
+          alias: user.alias,
+          clave: claveHasheada,
+          RolId: rolesMap[user.rolNombre],
+          // Si es admin va nulo, si no, se asigna a la Matriz Principal
+          PuntoVentaId: esAdmin ? null : puntoPrincipal.id,
+        },
+      })
+    }
+
+    // 4. Cargar Cifras
     const cifrasMap = {}
-
     for (const cifra of CIFRAS) {
       const [registro, creado] = await Cifras.findOrCreate({
         where: { cantidad: cifra.cantidad },
         defaults: cifra,
       })
-
-      // Guardamos el ID en memoria para usarlo en el siguiente paso
       cifrasMap[cifra.cantidad] = registro.id
-
-      if (creado) console.log(`Cifra ${cifra.cantidad} creada.`)
+      if (creado) console.log(`Cifra ${cifra.cantidad} cargada.`)
     }
 
-    // 2. Preparar Suertes de 2 Cifras
+    // 5. Cargar Suertes vinculadas
     const suertes2CifrasData = SUERTES_2_CIFRAS.map((suerte) => ({
       ...suerte,
-      CifraId: cifrasMap[2], // Vinculamos con el ID de la cifra 2
+      CifraId: cifrasMap[2],
     }))
 
-    // 3. Preparar Suertes de 3 Cifras
     const suertes3CifrasData = SUERTES_3_CIFRAS.map((suerte) => ({
       ...suerte,
-      CifraId: cifrasMap[3], // Vinculamos con el ID de la cifra 3
+      CifraId: cifrasMap[3],
     }))
 
-    // 4. Cargar Suertes (evitando repetidos por descripción y CifraId)
     const todasLasSuertes = [...suertes2CifrasData, ...suertes3CifrasData]
 
     for (const suerte of todasLasSuertes) {
@@ -69,8 +83,8 @@ export const cargarDatos = async () => {
       })
     }
 
-    console.log('¡Datos cargados exitosamente!')
+    console.log('--- PROCESO DE CARGA INICIAL COMPLETADO ---')
   } catch (error) {
-    console.error('Error cargando datos por defecto:', error)
+    console.error('Error crítico en el seed de datos:', error)
   }
 }

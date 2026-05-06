@@ -4,6 +4,8 @@ import { sorteoControllers } from '../../controllers/index.controllers.js'
 const sorteoRouter = Router()
 
 sorteoRouter.get('/listar/todos', sorteoControllers.listarTodos)
+sorteoRouter.get('/listar/abiertos', sorteoControllers.listarAbiertos)
+
 sorteoRouter.post('/crear', sorteoControllers.crearSorteo)
 sorteoRouter.patch('/actualizar-sorteo', sorteoControllers.actualizarSorteo)
 

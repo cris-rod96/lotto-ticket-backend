@@ -16,7 +16,7 @@ const cerrarCaja = async (id, data) => {
         where: {
           CajaId: id,
           tipo: 'Ingreso',
-          categoria: 'Banco',
+          categoria: 'Bancos',
         },
       })) || 0
 

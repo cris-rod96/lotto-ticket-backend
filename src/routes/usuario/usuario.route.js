@@ -8,5 +8,6 @@ usuarioRouter.post('/agregar', usuarioControllers.registrarUsuario)
 usuarioRouter.patch('/actualizar/informacion/:id', usuarioControllers.actualizarUsuario)
 usuarioRouter.patch('/actualizar/clave/:id', usuarioControllers.actualizarClave)
 usuarioRouter.delete('/eliminar/:id', usuarioControllers.eliminarUsuario)
+usuarioRouter.patch('/restaurar/:id', usuarioControllers.restaurarUsuario)
 
 export default usuarioRouter

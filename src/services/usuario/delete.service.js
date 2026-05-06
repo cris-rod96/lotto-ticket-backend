@@ -8,7 +8,7 @@ const eliminarUsuario = async (id) => {
   await usuario.update({
     activo: false,
   })
-  return { code: 400, message: 'Usuario eliminado con éxito' }
+  return { code: 200, message: 'Usuario eliminado con éxito' }
 }
 
 export { eliminarUsuario }

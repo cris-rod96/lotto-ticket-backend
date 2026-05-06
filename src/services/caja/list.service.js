@@ -18,6 +18,12 @@ const obtenerCajaAbierta = async (PuntoVentaId) => {
       PuntoVentaId,
       estado: 'Abierta',
     },
+    include: [
+      {
+        model: Usuarios,
+        attributes: ['id', 'nombresCompletos', 'PuntoVentaId'],
+      },
+    ],
   })
 
   return { code: 200, caja }
@@ -32,13 +38,24 @@ const listarTodas = async () => {
 }
 
 const listarPorPuntoDeVenta = async (PuntoVentaId) => {
+  // 1. Verificación de existencia
   const puntoVenta = await PuntosVenta.findByPk(PuntoVentaId)
-  if (!puntoVenta) return { code: 400, message: 'No se encontró el punto de venta indicado' }
+  if (!puntoVenta) {
+    return { code: 400, message: 'No se encontró el punto de venta indicado' }
+  }
+
+  // 2. Consulta con el formato de ORDER correcto
   const cajas = await Cajas.findAll({
     where: {
       PuntoVentaId,
     },
-    include: [Movimientos, Usuarios, PuntosVenta],
+    include: [
+      { model: Movimientos },
+      { model: Usuarios, attributes: ['id', 'nombresCompletos'] }, // Sugerencia: no traigas el password
+      { model: PuntosVenta },
+    ],
+    // EL ERROR ESTABA AQUÍ: Debe ser un array de arrays
+    order: [['createdAt', 'DESC']],
   })
 
   return { code: 200, cajas }

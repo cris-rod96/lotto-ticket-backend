@@ -1,4 +1,4 @@
-import { PuntosVenta, Sorteos, Usuarios } from '../../lib/db.lib.js'
+import { Catalogos, Cifras, PuntosVenta, Sorteos, Tickets, Usuarios } from '../../lib/db.lib.js'
 
 const listarTickets = async (filtros = {}) => {
   try {
@@ -13,7 +13,10 @@ const listarTickets = async (filtros = {}) => {
     const tickets = await Tickets.findAll({
       where,
       include: [
-        { model: Sorteos, attributes: ['numero', 'jornada', 'fechaSorteo'] },
+        {
+          model: Sorteos,
+          include: [Catalogos, Cifras],
+        },
         { model: PuntosVenta, attributes: ['nombre'] },
         { model: Usuarios, attributes: ['nombresCompletos'] },
       ],
@@ -22,6 +25,7 @@ const listarTickets = async (filtros = {}) => {
 
     return { code: 200, data: tickets }
   } catch (error) {
+    console.log(error.message)
     return { code: 500, message: error.message }
   }
 }

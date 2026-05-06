@@ -12,11 +12,18 @@ export const CIFRAS = [
   },
 ]
 
-export const USUARIO_TEST = {
-  nombresCompletos: 'Administrador General',
-  alias: 'admin',
-  rolNombre: 'ADMINISTRADOR',
-}
+export const USUARIO_TEST = [
+  {
+    nombresCompletos: 'Administrador General',
+    alias: 'admin',
+    rolNombre: 'ADMINISTRADOR',
+  },
+  {
+    nombresCompletos: 'Vendedor Normal',
+    alias: 'vendedor',
+    rolNombre: 'VENDEDOR',
+  },
+]
 
 export const SUERTES_2_CIFRAS = [
   { descripcion: 'PRIMERA SUERTE', premio: 72.0 },

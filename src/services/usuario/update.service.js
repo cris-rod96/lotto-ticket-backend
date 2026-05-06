@@ -38,4 +38,17 @@ const actualizarClave = async (id, nuevaClave) => {
   return { code: 200, message: 'Clave actualizada con éxito' }
 }
 
-export { actualizarClave, actualizarUsuario }
+const restaurarUsuario = async (id) => {
+  const usuario = await Usuarios.findByPk(id)
+  if (!usuario) return { code: 400, message: 'Usuario no encontrado' }
+
+  if (usuario.activo) return { code: 400, message: 'El usuario ya esta activo' }
+
+  await usuario.update({
+    activo: true,
+  })
+
+  return { code: 200, message: 'Usuario restaurado con éxito' }
+}
+
+export { actualizarClave, actualizarUsuario, restaurarUsuario }
