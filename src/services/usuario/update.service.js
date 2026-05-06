@@ -22,20 +22,46 @@ const actualizarUsuario = async (id, data, user) => {
     }
   }
 
+  // Actualizamos el usuario
   await usuario.update(data)
-  return { code: 200, message: 'Usuario actualizado con éxito', data: usuario }
-}
-const actualizarClave = async (id, nuevaClave) => {
-  const usuario = await Usuarios.findByPk(id)
-  if (!usuario) return { code: 400, message: 'Usuario no encontrado' }
 
+  // 1. Convertimos a objeto plano de JS
+  const usuarioSinClave = usuario.toJSON()
+
+  // 2. Eliminamos la contraseña (asegúrate de usar el nombre exacto de la columna, ej: 'password' o 'clave')
+  delete usuarioSinClave.clave // Por si acaso usas este nombre
+
+  return {
+    code: 200,
+    message: 'Usuario actualizado con éxito',
+    data: usuarioSinClave,
+  }
+}
+const actualizarClave = async (id, claveActual, nuevaClave) => {
+  const usuario = await Usuarios.findByPk(id)
+
+  if (!usuario) {
+    return { code: 404, message: 'Usuario no encontrado' }
+  }
+
+  const esCorrecta = await bcrypUtils.compararClave(claveActual, usuario.clave)
+
+  if (!esCorrecta) {
+    return {
+      code: 401, // Unauthorized
+      message: 'La clave actual es incorrecta',
+    }
+  }
+
+  // 3. Si la clave es correcta, hasheamos la nueva
   const claveCifrada = await bcrypUtils.hashearClave(nuevaClave)
 
+  // 4. Actualizamos
   await usuario.update({
     clave: claveCifrada,
   })
 
-  return { code: 200, message: 'Clave actualizada con éxito' }
+  return { code: 200, message: 'Tu contraseña ha sido actualizada con éxito' }
 }
 
 const restaurarUsuario = async (id) => {

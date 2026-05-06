@@ -6,8 +6,18 @@ const actualizarUsuario = async (req, res) => {
     const data = req.body
     const user = req.user
 
-    const { code, message } = await usuarioServices.actualizarUsuario(id, data, user)
-    res.status(code).json({ message })
+    // Extraemos usuarioData desestructurando el retorno del servicio
+    const {
+      code,
+      message,
+      data: usuarioData,
+    } = await usuarioServices.actualizarUsuario(id, data, user)
+
+    // Enviamos el código de estado, el mensaje y los datos del usuario (sin clave)
+    res.status(code).json({
+      message,
+      usuario: usuarioData, // Aquí viaja el objeto con delete usuarioSinClave.password
+    })
   } catch (error) {
     const msg =
       error.message ||
@@ -22,8 +32,12 @@ const actualizarUsuario = async (req, res) => {
 const actualizarClave = async (req, res) => {
   try {
     const { id } = req.params
-    const { nuevaClave } = req.body
-    const { code, message } = await usuarioServices.actualizarClave(id, nuevaClave)
+    // Extraemos tanto la clave actual como la nueva desde el body
+    const { claveActual, nuevaClave } = req.body
+
+    // Pasamos ambos valores al servicio para la validación de identidad
+    const { code, message } = await usuarioServices.actualizarClave(id, claveActual, nuevaClave)
+
     res.status(code).json({ message })
   } catch (error) {
     const msg =

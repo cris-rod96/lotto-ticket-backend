@@ -37,4 +37,18 @@ const actualizarPuntoVenta = async (id, data) => {
   }
 }
 
-export { actualizarPuntoVenta }
+const restaurarPuntoVenta = async (id) => {
+  const puntoVenta = await PuntosVenta.findByPk(id)
+
+  if (!puntoVenta) return { code: 400, message: 'Punto de venta no encontrado' }
+
+  if (puntoVenta.activo) return { code: 400, message: 'El punto de venta ya se encuentra activo.' }
+
+  await puntoVenta.update({
+    activo: true,
+  })
+
+  return { code: 200, message: 'Punto de venta restaurado' }
+}
+
+export { actualizarPuntoVenta, restaurarPuntoVenta }

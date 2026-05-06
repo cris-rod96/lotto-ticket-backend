@@ -14,6 +14,7 @@ const listarPuntosVentas = async () => {
       { model: Tickets, include: [DetallesTicket] },
       { model: Cajas, include: [Movimientos] },
     ],
+    order: [['createdAt', 'DESC']],
   })
 
   return { code: 200, puntosVentas }
