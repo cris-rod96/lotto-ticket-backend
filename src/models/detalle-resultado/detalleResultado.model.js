@@ -9,31 +9,6 @@ const DetalleResultadoModel = (sq) => {
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4,
       },
-
-      SuerteId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: 'Suertes',
-          key: 'id',
-        },
-      },
-
-      numeroSorteado: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-
-      numeroGanador: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-
-      cantidadGanadores: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-
       ResultadoId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -42,13 +17,17 @@ const DetalleResultadoModel = (sq) => {
           key: 'id',
         },
       },
-      TicketId: {
+      SuerteId: {
         type: DataTypes.UUID,
-        allowNull: true,
+        allowNull: false,
         references: {
-          model: 'Tickets',
+          model: 'Suertes',
           key: 'id',
         },
+      },
+      numeroGanador: {
+        type: DataTypes.STRING,
+        allowNull: false, // El número que salió premiado
       },
     },
     {

@@ -9,7 +9,6 @@ const ResultadoModel = (sq) => {
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4,
       },
-
       SorteoId: {
         type: DataTypes.UUID,
         allowNull: false,
@@ -17,6 +16,10 @@ const ResultadoModel = (sq) => {
           model: 'Sorteos',
           key: 'id',
         },
+      },
+      fechaRegistro: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
       },
     },
     {

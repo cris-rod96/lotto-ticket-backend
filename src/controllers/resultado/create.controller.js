@@ -5,6 +5,7 @@ const registrarResultados = async (req, res) => {
     const { code, message } = await resultadoServices.registrarResultados(req.body)
     res.status(code).json({ message })
   } catch (error) {
+    console.log(error)
     const msg =
       error.message ||
       'Error interno en el servidor. Intente de nuevo o contacte con un administrador.'

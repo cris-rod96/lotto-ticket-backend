@@ -11,7 +11,7 @@ import {
 } from '../../lib/db.lib.js'
 
 const venderTicket = async (data) => {
-  const t = await sq.transaction() //
+  const t = await sq.transaction()
 
   try {
     const {
@@ -21,37 +21,55 @@ const venderTicket = async (data) => {
       ClienteId,
       CajaId,
       detalles, // [{ numeroJugado, montoApostado }]
+      metodoPago = 'Efectivo', // Por defecto Efectivo
+      referenciaPago = null, // Numero de comprobante si es transferencia
     } = data
 
     // 1. Validar estado del Sorteo
-    const sorteo = await Sorteos.findByPk(SorteoId, { include: [Cifras] }) //
+    const sorteo = await Sorteos.findByPk(SorteoId, { include: [Cifras], transaction: t })
     if (!sorteo || sorteo.estado !== 'Abierto') {
-      return { code: 400, message: 'El sorteo no existe o está cerrado.' } //
+      throw new Error('El sorteo no existe o está cerrado.')
     }
 
     // 2. Validar Caja
-    const caja = await Cajas.findByPk(CajaId) //
+    const caja = await Cajas.findByPk(CajaId, { transaction: t })
     if (!caja || caja.estado !== 'Abierta') {
-      return { code: 400, message: 'La caja no está abierta.' } //
+      throw new Error('La caja no está abierta.')
+    }
+
+    // --- NUEVO: VALIDACIÓN DE TRANSFERENCIA ---
+    if (metodoPago === 'Transferencia') {
+      if (!referenciaPago) {
+        throw new Error('La referencia de transferencia es obligatoria.')
+      }
+
+      // Verificar que la referencia no haya sido usada antes
+      const referenciaExiste = await Movimientos.findOne({
+        where: { referencia: referenciaPago },
+        transaction: t,
+      })
+
+      if (referenciaExiste) {
+        throw new Error(`La referencia ${referenciaPago} ya fue registrada anteriormente.`)
+      }
     }
 
     let totalTicket = 0
     const detallesParaCrear = []
 
-    // 3. Procesar Cupos con Bloqueo de Transacción
+    // 3. Procesar Cupos con Bloqueo
     for (const item of detalles) {
       const monto = parseFloat(item.montoApostado)
       totalTicket += monto
 
-      // Buscamos y bloqueamos el registro para que nadie más lo edite simultáneamente
       let saldo = await SaldosCupo.findOne({
         where: { SorteoId, numeroJugado: item.numeroJugado },
         transaction: t,
-        lock: t.LOCK.UPDATE, // Garantiza que el cupo verificado sea el real al 100%
+        lock: t.LOCK.UPDATE,
       })
 
       if (!saldo) {
-        const cupoMax = parseFloat(sorteo.Cifra.cupoMaximoPorNumero) //
+        const cupoMax = parseFloat(sorteo.Cifra.cupoMaximoPorNumero)
         saldo = await SaldosCupo.create(
           {
             numeroJugado: item.numeroJugado,
@@ -61,7 +79,7 @@ const venderTicket = async (data) => {
             SorteoId,
           },
           { transaction: t }
-        ) //
+        )
       }
 
       if (monto > parseFloat(saldo.montoDisponible)) {
@@ -76,7 +94,7 @@ const venderTicket = async (data) => {
           montoDisponible: parseFloat(saldo.montoDisponible) - monto,
         },
         { transaction: t }
-      ) //
+      )
 
       detallesParaCrear.push({
         numeroJugado: item.numeroJugado,
@@ -85,8 +103,9 @@ const venderTicket = async (data) => {
       })
     }
 
-    const codigo = nanoidHelper.generarCodigo() //
+    const codigo = nanoidHelper.generarCodigo()
 
+    // 4. Crear Ticket
     const nuevoTicket = await Tickets.create(
       {
         codigo,
@@ -94,47 +113,52 @@ const venderTicket = async (data) => {
         PuntoVentaId,
         UsuarioId,
         ClienteId,
-        fechaCaducidad: sorteo.fechaSorteo,
-        referencia: totalTicket,
       },
       { transaction: t }
-    ) //
+    )
 
     await DetallesTicket.bulkCreate(
       detallesParaCrear.map((d) => ({ ...d, TicketId: nuevoTicket.id })),
       { transaction: t }
-    ) //
+    )
 
+    // 5. Crear Movimiento Contable
     await Movimientos.create(
       {
         tipo: 'Ingreso',
         categoria: 'Venta Ticket',
         monto: totalTicket,
-        descripcion: `Venta Ticket: ${nuevoTicket.codigo}`,
+        metodoPago, // 'Efectivo' o 'Transferencia'
+        referencia: referenciaPago, // Guardamos la referencia única
+        descripcion: `Venta Ticket: ${nuevoTicket.codigo} (${metodoPago})`,
         CajaId,
         PuntoVentaId,
         UsuarioId,
       },
       { transaction: t }
-    ) //
+    )
 
-    await caja.update(
-      {
-        saldoActual: parseFloat(caja.saldoActual) + totalTicket,
-        totalIngresos: parseFloat(caja.totalIngresos) + totalTicket,
-      },
-      { transaction: t }
-    ) //
+    // 6. Actualizar Caja (Solo afecta saldoActual si es EFECTIVO)
+    const updateCajaData = {
+      totalIngresos: parseFloat(caja.totalIngresos) + totalTicket,
+    }
 
+    if (metodoPago === 'Efectivo') {
+      updateCajaData.saldoActual = parseFloat(caja.saldoActual) + totalTicket
+    }
+
+    await caja.update(updateCajaData, { transaction: t })
+
+    // 7. Actualizar Sorteo (Siempre suma a lo recaudado)
     await sorteo.update(
       { montoRecaudado: parseFloat(sorteo.montoRecaudado) + totalTicket },
       { transaction: t }
-    ) //
+    )
 
-    await t.commit() //
+    await t.commit()
     return { code: 201, message: 'Ticket vendido con éxito', data: nuevoTicket }
   } catch (error) {
-    await t.rollback() //
+    if (t) await t.rollback()
     return { code: 400, message: error.message }
   }
 }
@@ -158,27 +182,19 @@ const verificarCupo = async (data) => {
       },
     })
 
-    let disponible
-
-    if (saldoExistente) {
-      disponible = parseFloat(saldoExistente.montoDisponible)
-    } else {
-      disponible = parseFloat(cupoMaximo)
-    }
+    let disponible = saldoExistente
+      ? parseFloat(saldoExistente.montoDisponible)
+      : parseFloat(cupoMaximo)
 
     if (parseFloat(monto) > disponible) {
       return {
         code: 400,
         message: `CUPO EXCEDIDO. DISPONIBLE: ${disponible}`,
-        disponible: disponible,
+        disponible,
       }
     }
 
-    return {
-      code: 200,
-      disponible,
-      message: 'Cupo verificado',
-    }
+    return { code: 200, disponible, message: 'Cupo verificado' }
   } catch (error) {
     return { code: 500, message: 'Error interno al verificar el cupo' }
   }

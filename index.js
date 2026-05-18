@@ -10,7 +10,7 @@ server.listen(envsConfig.PORT, () => {
 
   sq.sync({
     logging: false,
-    force: false, // Cambiado a false para no borrar tus tickets ganadores
+    force: true, // Cambiado a false para no borrar tus tickets ganadores
     alter: true,
   })
     .then(() => {

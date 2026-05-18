@@ -5,8 +5,10 @@ import catalogoRouter from './catalogo/catalogo.route.js'
 import cifraRouter from './cifra/cifra.route.js'
 import movimientoRouter from './movimiento/movimiento.route.js'
 import puntoVentaRouter from './punto-venta/puntoVenta.route.js'
+import resultadoRouter from './resultado/resultado.route.js'
 import rolRouter from './rol/rol.route.js'
 import sorteoRouter from './sorteo/sorteo.route.js'
+import statsRouter from './stats/stats.route.js'
 import suerteRouter from './suerte/suerte.route.js'
 import ticketRouter from './ticket/ticket.route.js'
 import usuarioRouter from './usuario/usuario.route.js'
@@ -24,4 +26,7 @@ rootRouter.use('/cajas', cajaRouter)
 rootRouter.use('/sorteos', sorteoRouter)
 rootRouter.use('/tickets', ticketRouter)
 rootRouter.use('/auth', authRouter)
+rootRouter.use('/resultados', resultadoRouter)
+rootRouter.use('/estadisticas', statsRouter)
+
 export default rootRouter

@@ -3,8 +3,15 @@ import { suerteServices } from '../../services/index.services.js'
 const actualizarPremio = async (req, res) => {
   try {
     const { id } = req.params
-    const { premio } = req.body
-    const { code, message } = await suerteServices.actualizarPremio(id, premio)
+    // Ahora recibimos también el PuntoVentaId desde el body del request
+    const { premio, PuntoVentaId } = req.body
+
+    // Enviamos el objeto completo al servicio para que pueda validar el sorteo activo y el punto de venta
+    const { code, message } = await suerteServices.actualizarPremio(id, {
+      premio,
+      PuntoVentaId,
+    })
+
     res.status(code).json({ message })
   } catch (error) {
     const msg =

@@ -1,8 +1,8 @@
 import { DataTypes } from 'sequelize'
 
-const SuerteModel = (sq) => {
+const DetallesSuerte = (sq) => {
   sq.define(
-    'Suertes',
+    'DetallesSuerte',
     {
       id: {
         type: DataTypes.UUID,
@@ -10,30 +10,33 @@ const SuerteModel = (sq) => {
         defaultValue: DataTypes.UUIDV4,
       },
 
-      descripcion: {
-        type: DataTypes.STRING,
+      premio: {
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
 
-      activo: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
-      },
-
-      CifraId: {
+      PuntoVentaId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'Cifras',
+          model: 'PuntosVenta',
+          key: 'id',
+        },
+      },
+      SuerteId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: 'Suertes',
           key: 'id',
         },
       },
     },
     {
-      tableName: 'Suertes',
+      tableName: 'DetallesSuerte',
       timestamps: true,
     }
   )
 }
 
-export default SuerteModel
+export default DetallesSuerte

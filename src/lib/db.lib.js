@@ -22,6 +22,8 @@ const {
   Tickets,
   Usuarios,
   SaldosCupo,
+  Ganadores,
+  DetallesSuerte,
 } = sq.models
 
 Roles.hasMany(Usuarios, { foreignKey: 'RolId' })
@@ -78,11 +80,26 @@ Resultados.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
 Resultados.hasMany(DetallesResultado, { foreignKey: 'ResultadoId' })
 DetallesResultado.belongsTo(Resultados, { foreignKey: 'ResultadoId' })
 
-Resultados.hasMany(Tickets, { foreignKey: 'TicketId' })
-Tickets.belongsTo(Resultados, { foreignKey: 'TicketId' })
+Tickets.hasMany(Resultados, { foreignKey: 'TicketId' })
+Resultados.belongsTo(Tickets, { foreignKey: 'TicketId' })
 
 Sorteos.hasMany(SaldosCupo, { foreignKey: 'SorteoId' })
 SaldosCupo.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
+
+Tickets.hasOne(Ganadores, { foreignKey: 'TicketId' })
+Ganadores.belongsTo(Tickets, { foreignKey: 'TicketId' })
+
+DetallesResultado.hasMany(Ganadores, { foreignKey: 'DetalleResultadoId' })
+Ganadores.belongsTo(DetallesResultado, { foreignKey: 'DetalleResultadoId' })
+
+Suertes.hasMany(DetallesResultado, { foreignKey: 'SuerteId' })
+DetallesResultado.belongsTo(Suertes, { foreignKey: 'SuerteId' })
+
+Suertes.hasMany(DetallesSuerte, { foreignKey: 'SuerteId' })
+DetallesSuerte.belongsTo(Suertes, { foreignKey: 'SuerteId' })
+
+PuntosVenta.hasMany(DetallesSuerte, { foreignKey: 'PuntoVentaId' })
+DetallesSuerte.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
 
 export {
   Cajas,
@@ -90,7 +107,9 @@ export {
   Cifras,
   Clientes,
   DetallesResultado,
+  DetallesSuerte,
   DetallesTicket,
+  Ganadores,
   Movimientos,
   PuntosVenta,
   Resultados,

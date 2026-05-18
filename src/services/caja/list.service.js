@@ -5,6 +5,7 @@ const obtenerCajasAbiertas = async () => {
     where: {
       estado: 'Abierta',
     },
+    order: [['createdAt', 'DESC']],
   })
 
   return { code: 200, cajas }
@@ -23,7 +24,11 @@ const obtenerCajaAbierta = async (PuntoVentaId) => {
         model: Usuarios,
         attributes: ['id', 'nombresCompletos', 'PuntoVentaId'],
       },
+      {
+        model: Movimientos,
+      },
     ],
+    order: [['createdAt', 'DESC']],
   })
 
   return { code: 200, caja }
@@ -31,7 +36,18 @@ const obtenerCajaAbierta = async (PuntoVentaId) => {
 
 const listarTodas = async () => {
   const cajas = await Cajas.findAll({
-    include: [Movimientos, Usuarios, PuntosVenta],
+    include: [
+      {
+        model: Movimientos,
+      },
+      {
+        model: Usuarios,
+      },
+      {
+        model: PuntosVenta,
+      },
+    ],
+    order: [['createdAt', 'DESC']],
   })
 
   return { code: 200, cajas }
@@ -55,7 +71,7 @@ const listarPorPuntoDeVenta = async (PuntoVentaId) => {
       { model: PuntosVenta },
     ],
     // EL ERROR ESTABA AQUÍ: Debe ser un array de arrays
-    order: [['createdAt', 'DESC']],
+    order: [[Movimientos, 'createdAt', 'DESC']],
   })
 
   return { code: 200, cajas }

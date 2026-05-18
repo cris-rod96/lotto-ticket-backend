@@ -1,8 +1,15 @@
-import { Cifras, Suertes } from '../../lib/db.lib.js'
+import { Cifras, DetallesSuerte, Suertes } from '../../lib/db.lib.js'
 
 const listarSuertes = async () => {
   const suertes = await Suertes.findAll({
-    include: [Cifras],
+    include: [
+      {
+        model: Cifras,
+      },
+      {
+        model: DetallesSuerte,
+      },
+    ],
     order: [['createdAt', 'ASC']],
   })
 

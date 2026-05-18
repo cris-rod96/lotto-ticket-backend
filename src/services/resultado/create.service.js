@@ -1,104 +1,116 @@
 import {
   DetallesResultado,
+  DetallesSuerte,
   DetallesTicket,
+  Ganadores,
   Resultados,
   Sorteos,
   sq,
-  Suertes,
   Tickets,
 } from '../../lib/db.lib.js'
+
+const calcularFechaExpiracion = (fechaInicio) => {
+  let diasContados = 0
+  let fechaFinal = new Date(fechaInicio)
+  while (diasContados < 4) {
+    fechaFinal.setDate(fechaFinal.getDate() + 1)
+    if (fechaFinal.getDay() !== 0) diasContados++
+  }
+  fechaFinal.setHours(23, 59, 59, 999)
+  return fechaFinal
+}
 
 const registrarResultados = async (data) => {
   const t = await sq.transaction()
 
   try {
-    const { SorteoId, resultadosArr } = data // [{ SuerteId, numeroSorteado }]
+    const { SorteoId, resultadosArr } = data
 
-    // 1. Validaciones de estado del Sorteo
     const sorteo = await Sorteos.findByPk(SorteoId)
-    if (!sorteo) {
+    if (!sorteo || sorteo.estado !== 'Cerrado') {
       await t.rollback()
-      return { code: 404, message: 'Sorteo no encontrado.' }
-    }
-    if (sorteo.estado !== 'Cerrado') {
-      await t.rollback()
-      return { code: 400, message: 'El sorteo debe estar Cerrado para ingresar resultados.' }
+      return { code: 400, message: 'Sorteo no encontrado o no está cerrado.' }
     }
 
-    // 2. Crear cabecera del resultado
+    const fechaDeCaducidad = calcularFechaExpiracion(sorteo.fechaSorteo)
     const nuevoResultado = await Resultados.create({ SorteoId }, { transaction: t })
-
     let totalPremiosSorteo = 0
 
-    // 3. Procesar cada Suerte premiada
     for (const res of resultadosArr) {
-      // Obtenemos la configuración de la suerte (aquí está el multiplicador en 'premio')
-      const suerteInfo = await Suertes.findByPk(res.SuerteId)
-      if (!suerteInfo) continue
-
-      // Buscar aciertos: Tickets pendientes de este sorteo con el número ganador
+      // 1. Buscamos los tickets que jugaron el número ganador
       const detallesGanadores = await DetallesTicket.findAll({
         include: [
           {
             model: Tickets,
             where: { SorteoId, estado: 'Pendiente' },
+            attributes: ['id', 'PuntoVentaId', 'montoTotalPremio'], // Traemos el PuntoVentaId
           },
         ],
         where: { numeroJugado: res.numeroSorteado },
         transaction: t,
       })
 
-      for (const detalle of detallesGanadores) {
-        // 1. CÁLCULO: Apostado * Multiplicador de la Suerte
-        const valorPremio = parseFloat(detalle.montoApostado) * parseFloat(suerteInfo.premio)
-
-        // 2. Actualizar el detalle con su premio específico
-        await detalle.update({ montoPremio: valorPremio }, { transaction: t })
-
-        // 3. ACTUALIZACIÓN CRÍTICA:
-        // Buscamos el ticket para sumarle el premio al montoTotalPremio de la cabecera
-        const ticketACoordinar = await Tickets.findByPk(detalle.TicketId, { transaction: t })
-
-        await ticketACoordinar.update(
-          {
-            resultado: 'Ganador',
-            // Sumamos el valor anterior + el nuevo premio (por si el ticket ganó en varias suertes)
-            montoTotalPremio: parseFloat(ticketACoordinar.montoTotalPremio || 0) + valorPremio,
-          },
-          { transaction: t }
-        )
-
-        // 4. Acumular para el balance final del sorteo
-        totalPremiosSorteo += valorPremio
-      }
-
-      // 4. Guardar en DetallesResultado para el acta del sorteo
-      await DetallesResultado.create(
+      // 2. Registramos el detalle del resultado oficial
+      const detalleRes = await DetallesResultado.create(
         {
           SuerteId: res.SuerteId,
-          numeroSorteado: res.numeroSorteado, // El número que salió en la tómbola
           numeroGanador: res.numeroSorteado,
           cantidadGanadores: detallesGanadores.length,
           ResultadoId: nuevoResultado.id,
         },
         { transaction: t }
       )
+
+      for (const detalle of detallesGanadores) {
+        // --- LO DELICIOSO: BUSCAR EL PREMIO SEGÚN EL LOCAL DEL TICKET ---
+        const configuracionPremio = await DetallesSuerte.findOne({
+          where: {
+            SuerteId: res.SuerteId,
+            PuntoVentaId: detalle.Ticket.PuntoVentaId,
+          },
+          transaction: t,
+        })
+
+        // Si por algún error no hay premio configurado, usamos 0 para no romper el proceso
+        const multiplicadorPremio = configuracionPremio ? parseFloat(configuracionPremio.premio) : 0
+        const valorPremio = parseFloat(detalle.montoApostado) * multiplicadorPremio
+
+        // 3. Actualizar detalle del ticket (monto ganado en esta suerte)
+        await detalle.update({ montoPremio: valorPremio }, { transaction: t })
+
+        // 4. Actualizar cabecera del ticket (Acumulamos si ganó en varias suertes)
+        const ticketId = detalle.TicketId
+        await Tickets.update(
+          {
+            resultado: 'Ganador',
+            montoTotalPremio: sq.literal(`"montoTotalPremio" + ${valorPremio}`),
+          },
+          { where: { id: ticketId }, transaction: t }
+        )
+
+        // 5. Crear el registro oficial de Ganador para cobro
+        await Ganadores.create(
+          {
+            TicketId: ticketId,
+            DetalleResultadoId: detalleRes.id,
+            montoPremio: valorPremio,
+            fechaCaducidad: fechaDeCaducidad,
+            estadoPago: 'Pendiente',
+          },
+          { transaction: t }
+        )
+
+        totalPremiosSorteo += valorPremio
+      }
     }
 
-    // 5. Los que no aparecieron en ninguna suerte pasan a 'No Ganador'
+    // 6. Marcar tickets perdedores
     await Tickets.update(
-      { resultado: 'No Ganador' },
-      {
-        where: {
-          SorteoId,
-          resultado: 'Pendiente',
-          estado: 'Pendiente',
-        },
-        transaction: t,
-      }
+      { resultado: 'No Ganador', estado: 'Expirado' },
+      { where: { SorteoId, resultado: 'Pendiente', estado: 'Pendiente' }, transaction: t }
     )
 
-    // 6. Cierre financiero del Sorteo
+    // 7. Cierre financiero del Sorteo
     await sorteo.update(
       {
         estado: 'Finalizado',
@@ -109,13 +121,11 @@ const registrarResultados = async (data) => {
     )
 
     await t.commit()
-    return {
-      code: 201,
-      message: 'Resultados procesados. Sorteo finalizado y premios calculados.',
-    }
+    return { code: 201, message: 'Resultados procesados y ganadores generados con éxito.' }
   } catch (error) {
     if (t) await t.rollback()
-    return { code: 500, message: 'Error en el proceso de resultados: ' + error.message }
+    console.error('Error en escrutinio:', error)
+    return { code: 500, message: 'Error: ' + error.message }
   }
 }
 

@@ -1,24 +1,35 @@
 import { Op } from 'sequelize'
-import { Sorteos } from '../../lib/db.lib.js'
+import { Sorteos, Tickets } from '../../lib/db.lib.js'
 
 const verificarCierreSorteos = async () => {
+  // 1. Obtenemos la fecha y hora actual forzando la zona horaria de Ecuador
   const ahora = new Date()
 
-  // Formateamos fecha y hora actual para comparar con la DB
-  const fechaActual = ahora.toISOString().split('T')[0]
-  const horaActual = ahora.toTimeString().split(' ')[0] // Formato HH:mm:ss
+  // 'en-CA' nos da el formato YYYY-MM-DD que requiere tu base de datos
+  const fechaActual = ahora.toLocaleDateString('en-CA', {
+    timeZone: 'America/Guayaquil',
+  })
 
+  // 'es-EC' con hour12: false nos da el formato 24h HH:mm:ss
+  const horaActual = ahora.toLocaleTimeString('es-EC', {
+    timeZone: 'America/Guayaquil',
+    hour12: false,
+  })
+
+  console.log(`[Sistema] Verificando: Hoy es ${fechaActual} y son las ${horaActual}`)
+
+  // 2. Ejecutamos la actualización con los datos locales correctos
   const [afectados] = await Sorteos.update(
     { estado: 'Cerrado' },
     {
       where: {
         estado: 'Abierto',
         [Op.or]: [
-          { fechaCierre: { [Op.lt]: fechaActual } }, // Si la fecha ya pasó
+          { fechaCierre: { [Op.lt]: fechaActual } }, // Si la fecha ya es menor a hoy (13)
           {
             [Op.and]: [
               { fechaCierre: fechaActual },
-              { horaCierre: { [Op.lte]: horaActual } }, // Si es hoy y la hora ya pasó
+              { horaCierre: { [Op.lte]: horaActual } }, // Si es hoy pero la hora ya pasó
             ],
           },
         ],
@@ -30,8 +41,6 @@ const verificarCierreSorteos = async () => {
     console.log(`[Sistema] Se han cerrado ${afectados} sorteos automáticamente.`)
   }
 }
-
-import { Tickets } from '../../lib/db.lib.js'
 
 const actualizarSorteo = async (id, data) => {
   const { CatalogoId, CifraId, horaSorteo, fechaSorteo } = data

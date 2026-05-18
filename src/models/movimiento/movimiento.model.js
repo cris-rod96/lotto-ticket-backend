@@ -28,6 +28,20 @@ const MovimientoModel = (sq) => {
         allowNull: false,
       },
 
+      // --- AJUSTE PARA PAGOS MIXTOS ---
+      metodoPago: {
+        type: DataTypes.ENUM('Efectivo', 'Transferencia'),
+        defaultValue: 'Efectivo',
+        allowNull: false,
+      },
+
+      referencia: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'Número de comprobante, lote o referencia de transferencia',
+      },
+      // --------------------------------
+
       monto: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,

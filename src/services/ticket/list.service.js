@@ -1,4 +1,12 @@
-import { Catalogos, Cifras, PuntosVenta, Sorteos, Tickets, Usuarios } from '../../lib/db.lib.js'
+import {
+  Catalogos,
+  Cifras,
+  DetallesTicket,
+  PuntosVenta,
+  Sorteos,
+  Tickets,
+  Usuarios,
+} from '../../lib/db.lib.js'
 
 const listarTickets = async (filtros = {}) => {
   try {
@@ -19,6 +27,7 @@ const listarTickets = async (filtros = {}) => {
         },
         { model: PuntosVenta, attributes: ['nombre'] },
         { model: Usuarios, attributes: ['nombresCompletos'] },
+        { model: DetallesTicket },
       ],
       order: [['createdAt', 'DESC']], // Los más recientes primero
     })
@@ -30,4 +39,32 @@ const listarTickets = async (filtros = {}) => {
   }
 }
 
-export { listarTickets }
+const listarPorPuntoDeVenta = async (id) => {
+  try {
+    const puntoVenta = await PuntosVenta.findByPk(id)
+    if (!puntoVenta) return { code: 400, message: 'Punto de venta no encontrado' }
+
+    const tickets = await Tickets.findAll({
+      where: {
+        PuntoVentaId: id,
+      },
+      include: [
+        {
+          model: Sorteos,
+          include: [Catalogos, Cifras],
+        },
+        { model: PuntosVenta },
+        { model: Usuarios },
+        { model: DetallesTicket },
+      ],
+      order: [['createdAt', 'DESC']],
+    })
+
+    return { code: 200, data: tickets }
+  } catch (error) {
+    console.log(error.message)
+    return { code: 500, message: error.message }
+  }
+}
+
+export { listarPorPuntoDeVenta, listarTickets }

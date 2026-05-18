@@ -21,4 +21,16 @@ const listarAbiertos = async () => {
   return { code: 200, sorteos }
 }
 
-export { listarAbiertos, listarTodos }
+const listarCerrados = async () => {
+  const sorteos = await Sorteos.findAll({
+    where: {
+      estado: 'Cerrado',
+    },
+    include: [Catalogos, Cifras],
+    order: [['createdAt', 'DESC']],
+  })
+
+  return { code: 200, sorteos }
+}
+
+export { listarAbiertos, listarCerrados, listarTodos }

@@ -1,65 +1,66 @@
 import { Cajas, Movimientos, Sorteos, sq, Tickets } from '../../lib/db.lib.js'
 
-const restarDiasHabiles = (fecha, dias) => {
-  let fechaResult = new Date(fecha)
-  let count = 0
-  while (count < dias) {
-    fechaResult.setDate(fechaResult.getDate() - 1)
-    const day = fechaResult.getDay()
-    if (day !== 0 && day !== 6) {
-      // 0 = Domingo, 6 = Sábado
-      count++
-    }
-  }
-  return fechaResult
-}
+// const restarDiasHabiles = (fecha, dias) => {
+//   let fechaResult = new Date(fecha)
+//   let count = 0
+//   while (count < dias) {
+//     fechaResult.setDate(fechaResult.getDate() - 1)
+//     const day = fechaResult.getDay()
+//     if (day !== 0 && day !== 6) {
+//       // 0 = Domingo, 6 = Sábado
+//       count++
+//     }
+//   }
+//   return fechaResult
+// }
 
 const expirarTicketsPorVencimiento = async () => {
   const t = await sq.transaction()
   try {
-    // Calculamos la fecha que representa 4 días hábiles atrás
     const hoy = new Date()
-    const fechaLimite = restarDiasHabiles(hoy, 4)
 
-    // 1. Buscar tickets ganadores pendientes con fecha de sorteo menor a la límite
-    const ticketsVencidos = await Tickets.findAll({
+    // 1. Buscamos directamente en la tabla Ganadores los que ya pasaron su fecha
+    const premiosVencidos = await Ganadores.findAll({
       where: {
-        estado: 'Pendiente',
-        resultado: 'Ganador',
+        estadoPago: 'Pendiente',
+        fechaCaducidad: { [Op.lt]: hoy }, // Más simple: ¿Caducó ya?
       },
       include: [
         {
-          model: Sorteos,
-          where: {
-            fechaSorteo: { [Op.lt]: fechaLimite },
-          },
+          model: Tickets,
+          include: [{ model: Sorteos }], // Para poder restar la deuda del sorteo
         },
       ],
       transaction: t,
     })
 
-    if (ticketsVencidos.length === 0) {
+    if (premiosVencidos.length === 0) {
       await t.rollback()
       return { count: 0 }
     }
 
-    for (const ticket of ticketsVencidos) {
-      const premio = parseFloat(ticket.montoTotalPremio || 0)
+    for (const ganador of premiosVencidos) {
+      const premio = parseFloat(ganador.montoPremio || 0)
+      const ticket = ganador.Ticket
+      const sorteo = ticket.Sorteo
 
-      // 2. Revertir la deuda del sorteo
-      await ticket.Sorteo.update(
+      // 2. Revertir la deuda del sorteo (Auditoría)
+      await sorteo.update(
         {
-          montoPorPagar: parseFloat(ticket.Sorteo.montoPorPagar) - premio,
+          montoPorPagar: parseFloat(sorteo.montoPorPagar) - premio,
         },
         { transaction: t }
       )
 
-      // 3. Marcar como Expirado (Estado del ENUM)
+      // 3. Marcar el premio como Expirado
+      await ganador.update({ estadoPago: 'Expirado' }, { transaction: t })
+
+      // 4. (Opcional) También marcar el ticket original como Expirado
       await ticket.update({ estado: 'Expirado' }, { transaction: t })
     }
 
     await t.commit()
-    return { count: ticketsVencidos.length }
+    return { count: premiosVencidos.length }
   } catch (error) {
     if (t) await t.rollback()
     throw error
@@ -67,13 +68,21 @@ const expirarTicketsPorVencimiento = async () => {
 }
 
 const pagarTicket = async (ticketId, usuarioId, cajaId) => {
+  // Iniciamos la transacción para asegurar la integridad de los datos
   const t = await sq.transaction()
 
   try {
-    // 1. Buscar el ticket con su sorteo (Ya no necesitamos DetallesTicket por el nuevo campo)
+    // 1. Buscar el ticket con LOCK e INNER JOIN forzado (required: true)
+    // Esto soluciona el error: "FOR UPDATE cannot be applied to the nullable side of an outer join"
     const ticket = await Tickets.findByPk(ticketId, {
-      include: [{ model: Sorteos }],
+      include: [
+        {
+          model: Sorteos,
+          required: true, // Forzamos INNER JOIN para que el LOCK funcione en Postgres
+        },
+      ],
       transaction: t,
+      lock: t.LOCK.UPDATE,
     })
 
     if (!ticket) {
@@ -81,50 +90,55 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       return { code: 404, message: 'Ticket no encontrado.' }
     }
 
-    // 2. Validaciones de estado (Usando tus ENUMS)
+    // 2. Validaciones de Negocio
     if (ticket.resultado !== 'Ganador') {
       await t.rollback()
       return { code: 400, message: 'Este ticket no está marcado como Ganador.' }
     }
+
     if (ticket.estado === 'Pagado') {
       await t.rollback()
       return { code: 400, message: 'Este ticket ya fue pagado anteriormente.' }
     }
-    if (ticket.estado === 'Anulado' || ticket.estado === 'Expirado') {
+
+    if (['Anulado', 'Expirado'].includes(ticket.estado)) {
       await t.rollback()
       return { code: 400, message: `No se puede pagar un ticket en estado: ${ticket.estado}.` }
     }
 
-    // 3. OBTENCIÓN DEL MONTO (Directo del nuevo campo de cabecera)
     const totalAPagar = parseFloat(ticket.montoTotalPremio || 0)
 
     if (totalAPagar <= 0) {
       await t.rollback()
-      return { code: 400, message: 'El ticket no tiene un monto de premio válido para pagar.' }
+      return { code: 400, message: 'El ticket no tiene un monto de premio válido.' }
     }
 
-    // 4. Validar Caja y Saldo Actual
-    const caja = await Cajas.findByPk(cajaId, { transaction: t })
+    // 3. Validar Caja y Saldo con LOCK
+    const caja = await Cajas.findByPk(cajaId, {
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    })
+
     if (!caja || caja.estado !== 'Abierta') {
       await t.rollback()
-      return { code: 400, message: 'La caja seleccionada no existe o no está abierta.' }
+      return { code: 400, message: 'La caja no existe o no se encuentra abierta.' }
     }
 
     if (parseFloat(caja.saldoActual) < totalAPagar) {
       await t.rollback()
       return {
         code: 400,
-        message: `Saldo insuficiente en caja. Saldo: $${caja.saldoActual}, Premio: $${totalAPagar.toFixed(2)}`,
+        message: `Saldo insuficiente en caja. Disponible: $${parseFloat(caja.saldoActual).toFixed(2)}`,
       }
     }
 
-    // 5. Registrar Movimiento de Egreso
-    await Movimientos.create(
+    // 4. Registrar Movimiento de Egreso
+    const movimiento = await Movimientos.create(
       {
         tipo: 'Egreso',
         categoria: 'Pago Premio',
         monto: totalAPagar,
-        descripcion: `Pago de premio - Ticket: ${ticket.codigo}`,
+        descripcion: `PAGO PREMIO - TICKET: ${ticket.codigo}`,
         CajaId: caja.id,
         PuntoVentaId: ticket.PuntoVentaId,
         UsuarioId: usuarioId,
@@ -132,7 +146,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       { transaction: t }
     )
 
-    // 6. Actualizar Saldo de la Caja
+    // 5. Actualizar Saldo de la Caja
     await caja.update(
       {
         saldoActual: parseFloat(caja.saldoActual) - totalAPagar,
@@ -141,29 +155,39 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       { transaction: t }
     )
 
-    // 7. Actualizar los contadores del Sorteo
-    await ticket.Sorteo.update(
+    // 6. Actualizar Contadores del Sorteo (montoPorPagar y montoPagado)
+    // Usamos decrement/increment para evitar problemas de concurrencia
+    await ticket.Sorteo.decrement('montoPorPagar', { by: totalAPagar, transaction: t })
+    await ticket.Sorteo.increment('montoPagado', { by: totalAPagar, transaction: t })
+
+    // 7. Finalizar cambiando el estado del Ticket y vinculando el movimiento
+    await ticket.update(
       {
-        montoPorPagar: parseFloat(ticket.Sorteo.montoPorPagar || 0) - totalAPagar,
-        montoPagado: parseFloat(ticket.Sorteo.montoPagado || 0) + totalAPagar,
+        estado: 'Pagado',
+        MovimientoId: movimiento.id,
+        fechaPago: new Date(),
       },
       { transaction: t }
     )
 
-    // 8. Finalizar cambiando el estado del Ticket
-    await ticket.update({ estado: 'Pagado' }, { transaction: t })
-
+    // Confirmamos todos los cambios en la base de datos
     await t.commit()
+
+    // 8. Recuperar la caja final para devolver el saldo actualizado al frontend
+    const cajaFinal = await Cajas.findByPk(cajaId)
 
     return {
       code: 200,
       message: `¡Éxito! Se pagaron $${totalAPagar.toFixed(2)} correctamente.`,
+      caja: cajaFinal,
     }
   } catch (error) {
+    // Si algo falla, revertimos cualquier cambio hecho durante la transacción
     if (t) await t.rollback()
+    console.error('Error en pagarTicket:', error.message)
     return {
       code: 500,
-      message: 'Error crítico en el proceso de pago: ' + error.message,
+      message: 'Error crítico en el servidor: ' + error.message,
     }
   }
 }

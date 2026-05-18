@@ -24,4 +24,16 @@ const listarAbiertos = async (req, res) => {
   }
 }
 
-export { listarAbiertos, listarTodos }
+const listarCerrados = async (req, res) => {
+  try {
+    const { code, sorteos } = await sorteoServices.listarCerrados()
+    res.status(code).json({ sorteos })
+  } catch (error) {
+    const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
+    req.status(500).json({
+      message: msg,
+    })
+  }
+}
+
+export { listarAbiertos, listarCerrados, listarTodos }
