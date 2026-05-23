@@ -1,4 +1,16 @@
-import { Cajas, Movimientos, Sorteos, sq, Tickets } from '../../lib/db.lib.js'
+import {
+  Cajas,
+  Catalogos,
+  Cifras,
+  Clientes,
+  DetallesTicket,
+  Movimientos,
+  PuntosVenta,
+  Sorteos,
+  sq,
+  Tickets,
+  Usuarios,
+} from '../../lib/db.lib.js'
 
 // const restarDiasHabiles = (fecha, dias) => {
 //   let fechaResult = new Date(fecha)
@@ -72,7 +84,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
   const t = await sq.transaction()
 
   try {
-    // 1. Buscar el ticket con LOCK e INNER JOIN forzado (required: true)
+    // 1. Buscar el ticket con LOCK e INNER JOIN forzado
     // Esto soluciona el error: "FOR UPDATE cannot be applied to the nullable side of an outer join"
     const ticket = await Tickets.findByPk(ticketId, {
       include: [
@@ -156,7 +168,6 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
     )
 
     // 6. Actualizar Contadores del Sorteo (montoPorPagar y montoPagado)
-    // Usamos decrement/increment para evitar problemas de concurrencia
     await ticket.Sorteo.decrement('montoPorPagar', { by: totalAPagar, transaction: t })
     await ticket.Sorteo.increment('montoPagado', { by: totalAPagar, transaction: t })
 
@@ -176,13 +187,27 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
     // 8. Recuperar la caja final para devolver el saldo actualizado al frontend
     const cajaFinal = await Cajas.findByPk(cajaId)
 
+    // 9. Recuperar el ticket completo con la estructura exacta de tu log
+    const ticketPagadoCompleto = await Tickets.findByPk(ticketId, {
+      include: [
+        { model: DetallesTicket },
+        { model: PuntosVenta },
+        { model: Usuarios },
+        { model: Clientes },
+        {
+          model: Sorteos,
+          include: [{ model: Catalogos }, { model: Cifras }],
+        },
+      ],
+    })
+
     return {
       code: 200,
       message: `¡Éxito! Se pagaron $${totalAPagar.toFixed(2)} correctamente.`,
       caja: cajaFinal,
+      ticket: ticketPagadoCompleto,
     }
   } catch (error) {
-    // Si algo falla, revertimos cualquier cambio hecho durante la transacción
     if (t) await t.rollback()
     console.error('Error en pagarTicket:', error.message)
     return {
@@ -191,5 +216,4 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
     }
   }
 }
-
 export { expirarTicketsPorVencimiento, pagarTicket }

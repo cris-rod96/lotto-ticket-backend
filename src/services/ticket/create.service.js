@@ -1,13 +1,16 @@
 import { nanoidHelper } from '../../helpers/index.helpers.js'
 import {
   Cajas,
+  Catalogos,
   Cifras,
   DetallesTicket,
   Movimientos,
+  PuntosVenta,
   SaldosCupo,
   Sorteos,
   sq,
   Tickets,
+  Usuarios,
 } from '../../lib/db.lib.js'
 
 const venderTicket = async (data) => {
@@ -155,8 +158,30 @@ const venderTicket = async (data) => {
       { transaction: t }
     )
 
+    // ==========================================
+    // NUEVA MODIFICACIÓN: EAGER LOADING DEL TICKET CREADO
+    // ==========================================
+    const ticketCompleto = await Tickets.findByPk(nuevoTicket.id, {
+      include: [
+        {
+          model: Sorteos,
+          include: [Catalogos, Cifras],
+        },
+        { model: PuntosVenta, attributes: ['nombre'] },
+        { model: Usuarios, attributes: ['nombresCompletos'] },
+        { model: DetallesTicket },
+      ],
+      transaction: t, // Se ejecuta dentro de la misma transacción
+    })
+
     await t.commit()
-    return { code: 201, message: 'Ticket vendido con éxito', data: nuevoTicket }
+
+    // Retornamos el objeto completo estructurado
+    return {
+      code: 201,
+      message: 'Ticket vendido con éxito',
+      data: { ticket: ticketCompleto },
+    }
   } catch (error) {
     if (t) await t.rollback()
     return { code: 400, message: error.message }
