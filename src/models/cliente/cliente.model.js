@@ -12,17 +12,17 @@ const ClienteModel = (sq) => {
 
       nombres: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
 
       cedula: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
 
       whatsapp: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
 
       PuntoVentaId: {

@@ -3,6 +3,7 @@ import {
   Cajas,
   Catalogos,
   Cifras,
+  Clientes, // <-- Asegúrate de que esté importado aquí
   DetallesTicket,
   Movimientos,
   PuntosVenta,
@@ -21,11 +22,15 @@ const venderTicket = async (data) => {
       SorteoId,
       PuntoVentaId,
       UsuarioId,
-      ClienteId,
       CajaId,
       detalles, // [{ numeroJugado, montoApostado }]
       metodoPago = 'Efectivo', // Por defecto Efectivo
-      referenciaPago = null, // Numero de comprobante si es transferencia
+      referenciaPago = null, // Número de comprobante si es transferencia
+
+      // Nuevos campos opcionales del cliente desde el frontend
+      clienteNombres,
+      clienteCedula,
+      clienteWhatsapp,
     } = data
 
     // 1. Validar estado del Sorteo
@@ -40,7 +45,40 @@ const venderTicket = async (data) => {
       throw new Error('La caja no está abierta.')
     }
 
-    // --- NUEVO: VALIDACIÓN DE TRANSFERENCIA ---
+    // --- NUEVO: GESTIÓN INTEGRAL DEL CLIENTE (FIND OR CREATE) ---
+    let finalClienteId = null
+
+    // Si el vendedor ingresó al menos la cédula, gestionamos el cliente
+    if (clienteCedula && clienteCedula.trim() !== '') {
+      const cedulaLimpia = clienteCedula.trim()
+
+      // Intentamos buscar al cliente por su cédula única
+      let cliente = await Clientes.findOne({
+        where: { cedula: cedulaLimpia },
+        transaction: t
+      })
+
+      if (!cliente) {
+        // Si no existe, lo creamos dinámicamente usando los datos provistos
+        cliente = await Clientes.create(
+          {
+            cedula: cedulaLimpia,
+            nombres: clienteNombres ? clienteNombres.trim().toUpperCase() : 'CLIENTE CASUAL',
+            whatsapp: clienteWhatsapp ? clienteWhatsapp.trim() : null,
+          },
+          { transaction: t }
+        )
+      } else {
+        // OPCIONAL: Si el cliente ya existe pero no tenía whatsapp registrado, se lo actualizamos
+        if (clienteWhatsapp && !cliente.whatsapp) {
+          await cliente.update({ whatsapp: clienteWhatsapp.trim() }, { transaction: t })
+        }
+      }
+
+      finalClienteId = cliente.id
+    }
+
+    // --- VALIDACIÓN DE TRANSFERENCIA ---
     if (metodoPago === 'Transferencia') {
       if (!referenciaPago) {
         throw new Error('La referencia de transferencia es obligatoria.')
@@ -108,14 +146,14 @@ const venderTicket = async (data) => {
 
     const codigo = nanoidHelper.generarCodigo()
 
-    // 4. Crear Ticket
+    // 4. Crear Ticket asociando el ClienteId obtenido dinámicamente
     const nuevoTicket = await Tickets.create(
       {
         codigo,
         SorteoId,
         PuntoVentaId,
         UsuarioId,
-        ClienteId,
+        ClienteId: finalClienteId, // <--- Aquí se inyecta de forma segura (UUID o null)
       },
       { transaction: t }
     )
@@ -158,9 +196,7 @@ const venderTicket = async (data) => {
       { transaction: t }
     )
 
-    // ==========================================
-    // NUEVA MODIFICACIÓN: EAGER LOADING DEL TICKET CREADO
-    // ==========================================
+    // 8. EAGER LOADING DEL TICKET CREADO (Incluimos el modelo Clientes para la respuesta e impresión)
     const ticketCompleto = await Tickets.findByPk(nuevoTicket.id, {
       include: [
         {
@@ -170,8 +206,9 @@ const venderTicket = async (data) => {
         { model: PuntosVenta, attributes: ['nombre'] },
         { model: Usuarios, attributes: ['nombresCompletos'] },
         { model: DetallesTicket },
+        { model: Clientes }, // <--- Incluido para que retorne los datos estructurados al frontend
       ],
-      transaction: t, // Se ejecuta dentro de la misma transacción
+      transaction: t,
     })
 
     await t.commit()
@@ -187,6 +224,7 @@ const venderTicket = async (data) => {
     return { code: 400, message: error.message }
   }
 }
+
 
 const verificarCupo = async (data) => {
   const { SorteoId, numero, monto } = data
