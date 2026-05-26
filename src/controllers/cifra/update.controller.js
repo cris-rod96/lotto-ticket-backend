@@ -17,4 +17,20 @@ const actualizarCupoMaximo = async (req, res) => {
   }
 }
 
-export { actualizarCupoMaximo }
+const recuperarCifra = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { code, message } = await cifraServices.recuperarCifra(id)
+    res.status(code).json({ message })
+  } catch (error) {
+    const msg =
+      error.message ||
+      'Error interno en el servidor. Intente de nuevo o contacte con un administrador.'
+
+    res.status(500).json({
+      message: msg,
+    })
+  }
+}
+
+export { actualizarCupoMaximo, recuperarCifra }

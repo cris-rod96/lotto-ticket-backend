@@ -28,4 +28,36 @@ const pagarTicket = async (req, res) => {
   }
 }
 
-export { pagarTicket }
+const anularTicket = async (req, res) => {
+  try {
+    // Obtenemos el ID desde los parámetros de la URL (:ticketId)
+    const { id } = req.params
+    // El usuario que realiza la acción suele venir del token de autenticación (req.usuario.id)
+    // o lo enviamos en el cuerpo si así está definido tu flujo actual
+    const { usuarioId } = req.body
+
+    // Llamamos al servicio de anulación
+    const { code, message, data } = await ticketServices.anularTicket(
+      id,
+      usuarioId
+    )
+
+    // Si la operación fue exitosa, enviamos el mensaje y la data
+    if (code === 200) {
+      return res.status(code).json({
+        message,
+        data,
+      })
+    }
+
+    // Para errores de negocio controlados (400)
+    res.status(code).json({ message })
+
+  } catch (error) {
+    // Captura de errores inesperados (500)
+    const msg = error.message || 'Error crítico en el servidor al anular el ticket'
+    res.status(500).json({ message: msg })
+  }
+}
+
+export { pagarTicket, anularTicket }

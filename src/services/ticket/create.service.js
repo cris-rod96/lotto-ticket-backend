@@ -3,7 +3,7 @@ import {
   Cajas,
   Catalogos,
   Cifras,
-  Clientes, // <-- Asegúrate de que esté importado aquí
+  Clientes,
   DetallesTicket,
   Movimientos,
   PuntosVenta,

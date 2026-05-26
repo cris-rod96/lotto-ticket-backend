@@ -7,7 +7,7 @@ ticketRouter.get('/listar/todos', ticketControllers.listarTickets)
 ticketRouter.get('/listar/punto-de-venta/:id', ticketControllers.listarPorPuntoDeVenta)
 
 ticketRouter.post('/vender', ticketControllers.venderTicket)
-ticketRouter.delete('/eliminar/:id', ticketControllers.eliminarTicket)
+ticketRouter.patch('/anular/:id', ticketControllers.anularTicket)
 ticketRouter.post('/verificar-cupo', ticketControllers.verificarCupo)
 
 ticketRouter.patch('/pagar-ticket', ticketControllers.pagarTicket)

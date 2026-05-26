@@ -6,6 +6,7 @@ import {
   DetallesTicket,
   Movimientos,
   PuntosVenta,
+  SaldosCupo,
   Sorteos,
   sq,
   Tickets,
@@ -216,4 +217,107 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
     }
   }
 }
-export { expirarTicketsPorVencimiento, pagarTicket }
+
+const anularTicket = async (ticketId, usuarioId) => {
+  const t = await sq.transaction()
+
+  try {
+    // 1. Obtener ticket con relaciones obligatorias para permitir el bloqueo (FOR UPDATE)
+    const ticket = await Tickets.findByPk(ticketId, {
+      include: [
+        {
+          model: DetallesTicket,
+          required: true // Transforma a INNER JOIN
+        },
+        {
+          model: Sorteos,
+          required: true // Transforma a INNER JOIN
+        },
+      ],
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    })
+
+    if (!ticket) throw new Error('Ticket no encontrado.')
+    if (ticket.estado === 'Anulado') throw new Error('El ticket ya fue anulado anteriormente.')
+    if (ticket.Sorteo.estado !== 'Abierto') throw new Error('No se puede anular: el sorteo ya no está abierto.')
+
+    // 2. Verificar Caja abierta para el Punto de Venta del ticket
+    const caja = await Cajas.findOne({
+      where: {
+        PuntoVentaId: ticket.PuntoVentaId,
+        estado: 'Abierta'
+      },
+      transaction: t,
+      lock: t.LOCK.UPDATE
+    })
+
+    if (!caja) throw new Error('No existe una caja abierta para este punto de venta.')
+
+    // 3. Calcular total del ticket
+    const totalTicket = ticket.DetallesTickets.reduce((sum, d) => sum + parseFloat(d.montoApostado), 0)
+
+    // 4. VALIDACIÓN: Verificar saldo suficiente
+    if (parseFloat(caja.saldoActual) < totalTicket) {
+      throw new Error(`Saldo en caja insuficiente para la anulación. Disponible: $${caja.saldoActual}`)
+    }
+
+    // 5. Revertir Cupos
+    for (const detalle of ticket.DetallesTickets) {
+      const saldo = await SaldosCupo.findOne({
+        where: { SorteoId: ticket.SorteoId, numeroJugado: detalle.numeroJugado },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      })
+
+      if (saldo) {
+        await saldo.update({
+          montoAcumulado: parseFloat(saldo.montoAcumulado) - parseFloat(detalle.montoApostado),
+          montoDisponible: parseFloat(saldo.montoDisponible) + parseFloat(detalle.montoApostado),
+        }, { transaction: t })
+      }
+    }
+
+    // 6. Registrar Movimiento de Anulación
+    await Movimientos.create({
+      tipo: 'Egreso',
+      categoria: 'Anulacion',
+      monto: totalTicket,
+      metodoPago: 'Efectivo',
+      descripcion: `Anulación ticket: ${ticket.codigo}`,
+      CajaId: caja.id,
+      PuntoVentaId: ticket.PuntoVentaId,
+      UsuarioId: usuarioId,
+    }, { transaction: t })
+
+    // 7. Actualizar Caja
+    const cajaActualizada = await caja.update({
+      totalIngresos: parseFloat(caja.totalIngresos) - totalTicket,
+      saldoActual: parseFloat(caja.saldoActual) - totalTicket
+    }, { transaction: t })
+
+    // 8. Actualizar Sorteo
+    await ticket.Sorteo.update({
+      montoRecaudado: parseFloat(ticket.Sorteo.montoRecaudado) - totalTicket
+    }, { transaction: t })
+
+    // 9. Marcar ticket como Anulado
+    await ticket.update({ estado: 'Anulado' }, { transaction: t })
+
+    await t.commit()
+
+    return {
+      code: 200,
+      message: 'Ticket anulado con éxito',
+      data: {
+        ticketId: ticket.id,
+        saldoCajaActualizado: cajaActualizada.saldoActual
+      }
+    }
+
+  } catch (error) {
+    if (t) await t.rollback()
+    return { code: 400, message: error.message }
+  }
+}
+export { expirarTicketsPorVencimiento, pagarTicket, anularTicket }

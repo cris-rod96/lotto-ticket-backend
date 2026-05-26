@@ -15,4 +15,18 @@ const actualizarCupoMaximo = async (id, cupoMaximo) => {
   return { code: 200, message: 'Cupo máximo actualizado' }
 }
 
-export { actualizarCupoMaximo }
+const recuperarCifra = async (id) => {
+  const cifra = await Cifras.findByPk(id)
+  if (!cifra) return { code: 400, message: "No se encontró la cifra a recuperar" }
+
+  if (cifra.activo === true) return { code: 400, message: "La cifra ya se encuentra activa" }
+
+
+  await cifra.update({
+    activo: true
+  })
+
+  return { code: 200, message: "Cifra activada con éxito." }
+}
+
+export { actualizarCupoMaximo, recuperarCifra }
