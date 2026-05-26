@@ -43,41 +43,64 @@ const verificarCierreSorteos = async () => {
 }
 
 const actualizarSorteo = async (id, data) => {
-  const { CatalogoId, CifraId, horaSorteo, fechaSorteo } = data
+  try {
+    console.log(data)
+    const { CatalogoId, CifraId, horaSorteo, fechaSorteo } = data
 
-  // 1. Verificar si el sorteo existe
-  const sorteo = await Sorteos.findByPk(id)
-  if (!sorteo) return { code: 404, message: 'Sorteo no encontrado.' }
+    // 1. Verificar si el sorteo existe
+    const sorteo = await Sorteos.findByPk(id)
+    if (!sorteo) {
+      return { code: 404, message: 'Sorteo no encontrado.' }
+    }
 
-  // 2. Bloqueo de seguridad: Si ya hay tickets vendidos, no permitimos cambiar Lotería o Cifras
-  if (CatalogoId || CifraId) {
-    const tieneVentas = await Tickets.findOne({ where: { SorteoId: id } })
-    if (tieneVentas) {
-      return {
-        code: 400,
-        message:
-          'No se puede cambiar la lotería o el tipo de cifra porque ya existen tickets vendidos para este sorteo.',
+    // 2. CORREGIDO: Bloqueo de seguridad inteligente
+    // Solo bloquea si REALMENTE se intenta cambiar a un ID de catálogo o cifra distinto al actual
+    const cambiaCatalogo = CatalogoId && CatalogoId !== sorteo.CatalogoId
+    const cambiaCifra = CifraId && CifraId !== sorteo.CifraId
+
+    if (cambiaCatalogo || cambiaCifra) {
+      // Usamos .count() que es más óptimo que .findOne() para verificar existencia
+      const tieneVentas = await Tickets.count({ where: { SorteoId: id } })
+
+      if (tieneVentas > 0) {
+        return {
+          code: 400,
+          message:
+            'No se puede cambiar la lotería o el tipo de cifra porque ya existen tickets vendidos para este sorteo.',
+        }
       }
     }
-  }
 
-  // 3. Recalcular hora de cierre si se cambia la hora del sorteo
-  if (horaSorteo && !data.horaCierre) {
-    const [horas, minutos] = horaSorteo.split(':')
-    const fechaAux = new Date()
-    fechaAux.setHours(parseInt(horas), parseInt(minutos) - 5, 0)
+    // 3. Recalcular hora de cierre si se cambia la hora del sorteo
+    if (horaSorteo && !data.horaCierre) {
+      const [horas, minutos] = horaSorteo.split(':')
+      const fechaAux = new Date()
+      fechaAux.setHours(parseInt(horas), parseInt(minutos) - 5, 0)
 
-    data.horaCierre = `${fechaAux.getHours().toString().padStart(2, '0')}:${fechaAux.getMinutes().toString().padStart(2, '0')}:00`
-    data.fechaCierre = data.fechaCierre || fechaSorteo || sorteo.fechaSorteo
-  }
+      data.horaCierre = `${fechaAux.getHours().toString().padStart(2, '0')}:${fechaAux.getMinutes().toString().padStart(2, '0')}:00`
 
-  // 4. Actualizar el registro
-  await sorteo.update(data)
+      // Asegurar que la fecha de cierre se mueva en sintonía con la nueva fecha enviada
+      data.fechaCierre = data.fechaCierre || fechaSorteo || sorteo.fechaSorteo
+    } else if (fechaSorteo && !data.fechaCierre) {
+      // MEJORA: Si solo cambias la fecha del sorteo, la fecha de cierre también debe actualizarse
+      data.fechaCierre = fechaSorteo
+    }
 
-  return {
-    code: 200,
-    message: 'Sorteo actualizado correctamente',
-    data: sorteo,
+    // 4. Actualizar el registro
+    await sorteo.update(data)
+
+    return {
+      code: 200,
+      message: 'Sorteo actualizado correctamente',
+      data: sorteo,
+    }
+
+  } catch (error) {
+    console.error("Error al actualizar sorteo:", error.message)
+    return {
+      code: 500,
+      message: 'Error interno del servidor al intentar actualizar el sorteo: ' + error.message
+    }
   }
 }
 
