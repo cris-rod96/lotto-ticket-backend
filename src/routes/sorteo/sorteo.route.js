@@ -8,7 +8,7 @@ sorteoRouter.get('/listar/abiertos', sorteoControllers.listarAbiertos)
 sorteoRouter.get('/listar/cerrados', sorteoControllers.listarCerrados)
 
 sorteoRouter.post('/crear', sorteoControllers.crearSorteo)
-sorteoRouter.patch('/actualizar-sorteo', sorteoControllers.actualizarSorteo)
+sorteoRouter.patch('/actualizar-sorteo/:id', sorteoControllers.actualizarSorteo)
 
 sorteoRouter.delete('/eliminar/:id', sorteoControllers.eliminarSorteo)
 
