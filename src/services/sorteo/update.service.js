@@ -44,7 +44,6 @@ const verificarCierreSorteos = async () => {
 
 const actualizarSorteo = async (id, data) => {
   try {
-    console.log(data)
     const { CatalogoId, CifraId, horaSorteo, fechaSorteo } = data
 
     // 1. Verificar si el sorteo existe

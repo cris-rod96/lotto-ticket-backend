@@ -34,12 +34,12 @@ const listarTickets = async (filtros = {}) => {
 
     return { code: 200, data: tickets }
   } catch (error) {
-    console.log(error.message)
     return { code: 500, message: error.message }
   }
 }
 
 const listarPorPuntoDeVenta = async (id) => {
+  console.log(id)
   try {
     const puntoVenta = await PuntosVenta.findByPk(id)
     if (!puntoVenta) return { code: 400, message: 'Punto de venta no encontrado' }
@@ -62,7 +62,6 @@ const listarPorPuntoDeVenta = async (id) => {
 
     return { code: 200, data: tickets }
   } catch (error) {
-    console.log(error.message)
     return { code: 500, message: error.message }
   }
 }

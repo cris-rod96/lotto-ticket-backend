@@ -13,28 +13,53 @@ const registrarPuntoVenta = async (data) => {
   }
 
   try {
-    // 2. Crear el Punto de Venta
+    // 2. Buscar primero el Punto de Venta Matriz para copiar sus premios por defecto
+    const puntoMatriz = await PuntosVenta.findOne({
+      where: { nombre: 'MATRIZ PRINCIPAL' },
+    })
+
+    if (!puntoMatriz) {
+      return {
+        code: 404,
+        message: 'No se encontró la MATRIZ PRINCIPAL para heredar los premios base.',
+      }
+    }
+
+    // 3. Traer los detalles de premios configurados en la Matriz
+    const detallesMatriz = await DetallesSuerte.findAll({
+      where: { PuntoVentaId: puntoMatriz.id },
+    })
+
+    // 4. Crear el Nuevo Punto de Venta
     const nuevoPunto = await PuntosVenta.create(data)
 
-    // 3. VINCULACIÓN AUTOMÁTICA DE SUERTES
-    // Buscamos todas las suertes maestras definidas (2 y 3 cifras)
-    const todasLasSuertes = await Suertes.findAll()
-
-    if (todasLasSuertes.length > 0) {
-      // Preparamos los detalles con premio inicial 0.00
-      const detallesIniciales = todasLasSuertes.map((suerte) => ({
-        premio: 0.0,
-        SuerteId: suerte.id,
+    // 5. VINCULACIÓN AUTOMÁTICA DE SUERTES CON PREMIOS HEREDADOS
+    if (detallesMatriz.length > 0) {
+      // Mapeamos basándonos en los premios reales de la Matriz
+      const detallesHeredados = detallesMatriz.map((detalle) => ({
+        premio: detalle.premio,
+        SuerteId: detalle.SuerteId,
         PuntoVentaId: nuevoPunto.id,
       }))
 
-      // Inserción masiva de la configuración inicial
-      await DetallesSuerte.bulkCreate(detallesIniciales)
+      // Inserción masiva de la configuración clonada (Corregido el typo aquí)
+      await DetallesSuerte.bulkCreate(detallesHeredados)
+    } else {
+      // Caso de respaldo: Si la matriz no tenía filas, mapeamos en cero
+      const todasLasSuertes = await Suertes.findAll()
+      if (todasLasSuertes.length > 0) {
+        const detallesEnCero = todasLasSuertes.map((suerte) => ({
+          premio: 0.0,
+          SuerteId: suerte.id,
+          PuntoVentaId: nuevoPunto.id,
+        }))
+        await DetallesSuerte.bulkCreate(detallesEnCero)
+      }
     }
 
     return {
       code: 201,
-      message: `Punto de venta '${nombre}' creado y configurado con ${todasLasSuertes.length} suertes iniciales.`,
+      message: `Punto de venta '${nombre}' creado con éxito. Se configuraron ${detallesMatriz.length || todasLasSuertes.length} suertes heredando los valores de la Matriz.`,
     }
   } catch (error) {
     console.error('Error al registrar punto de venta:', error)
