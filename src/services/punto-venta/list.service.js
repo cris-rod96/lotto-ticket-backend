@@ -13,28 +13,42 @@ import {
 const listarPuntosVentas = async () => {
   const puntosVentas = await PuntosVenta.findAll({
     include: [
-      { model: Usuarios },
-      { model: Tickets, include: [DetallesTicket] },
-      { model: Cajas, include: [Movimientos] },
       {
-        model: DetallesSuerte,
-        include: [
-          {
-            model: Suertes,
-            include: [Cifras],
-          },
-        ],
-      }, // Asegúrate que el modelo aquí se llame Suertes o Suerte según tus alias
+        model: Usuarios,
+      },
+      // Quitamos Tickets, Cajas y DetallesSuerte de aquí. ¡Paz para Postgres!
     ],
-    order: [
-      ['createdAt', 'DESC'], // Orden de los puntos de venta
-
-      // SOLUCIÓN: Sequelize ordenará la respuesta usando el createdAt del modelo anidado (Suerte)
-      [DetallesSuerte, Suertes, 'createdAt', 'ASC'],
-    ],
+    order: [['createdAt', 'DESC']],
   })
 
   return { code: 200, puntosVentas }
 }
 
-export { listarPuntosVentas }
+// BACKEND: Obtener la info pesada de UN SOLO punto cuando abran el modal
+const obtenerDetallesPunto = async (id) => {
+  // 1. Buscamos el punto de venta con sus relaciones
+  const detalle = await PuntosVenta.findByPk(id, {
+    include: [
+      { model: Usuarios },
+      { model: Tickets, include: [DetallesTicket] },
+      { model: Cajas, include: [Movimientos] },
+      {
+        model: DetallesSuerte,
+        include: [{ model: Suertes, include: [Cifras] }],
+      },
+    ],
+  })
+
+  // 2. VALIDACIÓN: Si no se encuentra, respondemos con un error controlado
+  if (!detalle) {
+    return {
+      code: 404,
+      message: 'El punto de venta solicitado no existe o fue eliminado.',
+    }
+  }
+
+  // 3. Si todo está bien, devolvemos los datos
+  return { code: 200, detalle }
+}
+
+export { listarPuntosVentas, obtenerDetallesPunto }

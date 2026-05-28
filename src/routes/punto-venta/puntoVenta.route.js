@@ -8,5 +8,6 @@ puntoVentaRouter.post('/agregar', puntoVentaControllers.registrarPuntoVenta)
 puntoVentaRouter.patch('/actualizar-informacion/:id', puntoVentaControllers.actualizarPuntoVenta)
 puntoVentaRouter.delete('/eliminar/:id', puntoVentaControllers.eliminarPuntoVenta)
 puntoVentaRouter.patch('/restaurar/:id', puntoVentaControllers.restaurarPuntoVenta)
+puntoVentaRouter.get('/obtener-detalle/punto-venta/:id', puntoVentaControllers.obtenerDetallesPunto)
 
 export default puntoVentaRouter
