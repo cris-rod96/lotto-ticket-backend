@@ -9,5 +9,8 @@ puntoVentaRouter.patch('/actualizar-informacion/:id', puntoVentaControllers.actu
 puntoVentaRouter.delete('/eliminar/:id', puntoVentaControllers.eliminarPuntoVenta)
 puntoVentaRouter.patch('/restaurar/:id', puntoVentaControllers.restaurarPuntoVenta)
 puntoVentaRouter.get('/obtener-detalle/punto-venta/:id', puntoVentaControllers.obtenerDetallesPunto)
-
+puntoVentaRouter.get(
+  '/puntos-ventas/:id/tickets',
+  puntoVentaControllers.listarTicketsPuntoPaginados
+)
 export default puntoVentaRouter

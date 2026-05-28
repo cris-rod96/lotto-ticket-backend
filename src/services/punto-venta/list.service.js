@@ -62,9 +62,9 @@ const listarPuntosVentas = async () => {
   }
 }
 
+// CONTROLADOR BACKEND: Deja obtenerDetallesPunto libre de tickets históricos
 const obtenerDetallesPunto = async (id) => {
   try {
-    // 1. Buscamos el punto con sus cajas limpias, movimientos limitados y suertes
     const detalle = await PuntosVenta.findByPk(id, {
       include: [
         {
@@ -73,12 +73,12 @@ const obtenerDetallesPunto = async (id) => {
         },
         {
           model: Cajas,
-          limit: 5, // Trae solo las últimas 5 jornadas de caja
+          limit: 5,
           order: [['createdAt', 'DESC']],
           include: [
             {
               model: Movimientos,
-              limit: 20, // Protegemos el heap trayendo solo los últimos 20 movimientos
+              limit: 20,
               order: [['createdAt', 'DESC']],
             },
           ],
@@ -91,25 +91,40 @@ const obtenerDetallesPunto = async (id) => {
     })
 
     if (!detalle) {
-      return { code: 404, message: 'El punto de venta solicitado no existe o fue eliminado.' }
+      return { code: 404, message: 'El punto de venta no existe.' }
     }
 
-    // 2. Traemos únicamente los últimos 50 tickets emitidos con su montoApostado y jugadas
-    const ticketsRecientes = await Tickets.findAll({
-      where: { PuntoVentaId: id },
-      include: [{ model: DetallesTicket }],
-      limit: 50,
-      order: [['createdAt', 'DESC']],
-    })
-
-    // 3. Estructura final limpia para el modal de React
-    const detallePlano = detalle.toJSON()
-    detallePlano.Tickets = ticketsRecientes
-
-    return { code: 200, detalle: detallePlano }
+    return { code: 200, detalle: detalle.toJSON() }
   } catch (error) {
-    return { code: 500, message: 'Error interno al obtener los detalles', error: error.message }
+    return { code: 500, message: 'Error interno', error: error.message }
   }
 }
 
-export { listarPuntosVentas, obtenerDetallesPunto }
+// CONTROLADOR BACKEND: Nueva función para paginar los mil tickets
+const listarTicketsPuntoPaginados = async (id, pagina = 1, limite = 20) => {
+  try {
+    const limit = parseInt(limite)
+    const offset = (parseInt(pagina) - 1) * limit
+
+    const { count, rows } = await Tickets.findAndCountAll({
+      where: { PuntoVentaId: id },
+      include: [{ model: DetallesTicket }],
+      limit: limit,
+      offset: offset,
+      order: [['createdAt', 'DESC']],
+    })
+
+    return {
+      code: 200,
+      tickets: rows,
+      totalTickets: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(pagina),
+    }
+  } catch (error) {
+    return { code: 500, message: 'Error al paginar tickets', error: error.message }
+  }
+}
+
+// No olvides exportarla al final de tu archivo
+export { listarPuntosVentas, listarTicketsPuntoPaginados, obtenerDetallesPunto }
