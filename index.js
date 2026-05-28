@@ -71,7 +71,7 @@ server.listen(envsConfig.PORT, () => {
   sq.sync({
     logging: false,
     force: false, // Cambiado a false para no borrar tus tickets ganadores
-    alter: false,
+    alter: true,
   })
     .then(() => {
       console.log('Base de datos sincronizada con éxito')
