@@ -1,4 +1,5 @@
 import authServices from './auth/auth.service.js'
+import backupServices from './backups/index.service.js'
 import cajaServices from './caja/index.service.js'
 import catalogoService from './catalogo/index.service.js'
 import cifraServices from './cifra/index.service.js'
@@ -14,6 +15,7 @@ import usuarioServices from './usuario/index.service.js'
 
 export {
   authServices,
+  backupServices,
   cajaServices,
   catalogoService,
   cifraServices,

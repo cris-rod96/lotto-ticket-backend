@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import authRouter from './auth/auth.route.js'
+import backupRouter from './backup/backup.route.js'
 import cajaRouter from './caja/caja.route.js'
 import catalogoRouter from './catalogo/catalogo.route.js'
 import cifraRouter from './cifra/cifra.route.js'
@@ -28,5 +29,6 @@ rootRouter.use('/tickets', ticketRouter)
 rootRouter.use('/auth', authRouter)
 rootRouter.use('/resultados', resultadoRouter)
 rootRouter.use('/estadisticas', statsRouter)
+rootRouter.use('/respaldos', backupRouter)
 
 export default rootRouter

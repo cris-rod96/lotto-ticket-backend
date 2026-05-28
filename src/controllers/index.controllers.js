@@ -1,4 +1,5 @@
 import authControllers from './auth/auth.controller.js'
+import backupControllers from './backup/index.controller.js'
 import cajaControllers from './caja/index.controller.js'
 import catalogoControllers from './catalogo/index.controller.js'
 import cifraControllers from './cifra/index.controller.js'
@@ -14,6 +15,7 @@ import usuarioControllers from './usuario/index.controller.js'
 
 export {
   authControllers,
+  backupControllers,
   cajaControllers,
   catalogoControllers,
   cifraControllers,

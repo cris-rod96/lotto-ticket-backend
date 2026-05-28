@@ -24,6 +24,7 @@ const {
   SaldosCupo,
   Ganadores,
   DetallesSuerte,
+  Backups,
 } = sq.models
 
 Roles.hasMany(Usuarios, { foreignKey: 'RolId' })
@@ -102,6 +103,7 @@ PuntosVenta.hasMany(DetallesSuerte, { foreignKey: 'PuntoVentaId' })
 DetallesSuerte.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
 
 export {
+  Backups,
   Cajas,
   Catalogos,
   Cifras,

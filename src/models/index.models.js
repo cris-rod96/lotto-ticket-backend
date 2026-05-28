@@ -1,3 +1,4 @@
+import BackupModel from './backup/backup.model.js'
 import CajaModel from './caja/caja.model.js'
 import CatalogoModel from './catalogo/catalogo.model.js'
 import CifraModel from './cifra/cifra.model.js'
@@ -33,4 +34,5 @@ export const models = [
   SaldoCupoModel,
   GanadorModel,
   DetallesSuerte,
+  BackupModel,
 ]

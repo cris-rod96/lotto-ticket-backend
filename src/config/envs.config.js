@@ -1,5 +1,4 @@
 import 'dotenv/config'
-
 const {
   PORT = 3000,
   NODE_ENV = 'development',
@@ -7,6 +6,9 @@ const {
   DATABASE_URI_PROD,
   PASSWORD_ADMIN_DEFAULT,
   SECRET_WORD,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_CLOUD_NAME,
 } = process.env
 
 export default {
@@ -16,4 +18,7 @@ export default {
   DATABASE_URI_PROD,
   PASSWORD_ADMIN_DEFAULT,
   SECRET_WORD,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_CLOUD_NAME,
 }
