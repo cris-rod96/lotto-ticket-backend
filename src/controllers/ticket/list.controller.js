@@ -32,6 +32,7 @@ const listarPorPuntoDeVenta = async (req, res) => {
     // Retornamos la estructura paginada completa: { tickets, totalItems, totalPages, currentPage }
     res.status(code).json(data ? { ...data, message } : { message })
   } catch (error) {
+    console.log(error)
     const msg = error.message || 'Error crítico en el servidor. Intente de nuevo'
     res.status(500).json({ message: msg })
   }
