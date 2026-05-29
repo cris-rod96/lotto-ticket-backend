@@ -2,11 +2,21 @@ import { sorteoServices } from '../../services/index.services.js'
 
 const listarTodos = async (req, res) => {
   try {
-    const { code, sorteos } = await sorteoServices.listarTodos()
-    res.status(code).json({ sorteos })
+    // Capturamos todos los parámetros de paginación y filtros desde la query string
+    const { code, sorteos, totalItems, totalPages, currentPage } = await sorteoServices.listarTodos(
+      req.query
+    )
+
+    // Devolvemos la data completa para que el frontend sepa cómo armar la paginación
+    res.status(code).json({
+      sorteos,
+      totalItems,
+      totalPages,
+      currentPage,
+    })
   } catch (error) {
     const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
-    req.status(500).json({
+    res.status(500).json({
       message: msg,
     })
   }
@@ -14,11 +24,19 @@ const listarTodos = async (req, res) => {
 
 const listarAbiertos = async (req, res) => {
   try {
-    const { code, sorteos } = await sorteoServices.listarAbiertos()
-    res.status(code).json({ sorteos })
+    // Pasamos req.query para que también herede la paginación y filtros dinámicos
+    const { code, sorteos, totalItems, totalPages, currentPage } =
+      await sorteoServices.listarAbiertos(req.query)
+
+    res.status(code).json({
+      sorteos,
+      totalItems,
+      totalPages,
+      currentPage,
+    })
   } catch (error) {
     const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
-    req.status(500).json({
+    res.status(500).json({
       message: msg,
     })
   }
@@ -26,11 +44,19 @@ const listarAbiertos = async (req, res) => {
 
 const listarCerrados = async (req, res) => {
   try {
-    const { code, sorteos } = await sorteoServices.listarCerrados()
-    res.status(code).json({ sorteos })
+    // Pasamos req.query idéntico a los anteriores
+    const { code, sorteos, totalItems, totalPages, currentPage } =
+      await sorteoServices.listarCerrados(req.query)
+
+    res.status(code).json({
+      sorteos,
+      totalItems,
+      totalPages,
+      currentPage,
+    })
   } catch (error) {
     const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
-    req.status(500).json({
+    res.status(500).json({
       message: msg,
     })
   }
