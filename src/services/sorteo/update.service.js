@@ -18,14 +18,14 @@ const verificarCierreSorteos = async () => {
 
   console.log(`[Sistema] Verificando: Hoy es ${fechaActual} y son las ${horaActual}`)
 
-  // 2. Ejecutamos la actualización con los datos locales correctos
+  // 2. Ejecutamos la actualización normal con los datos locales correctos
   const [afectados] = await Sorteos.update(
     { estado: 'Cerrado' },
     {
       where: {
         estado: 'Abierto',
         [Op.or]: [
-          { fechaCierre: { [Op.lt]: fechaActual } }, // Si la fecha ya es menor a hoy (13)
+          { fechaCierre: { [Op.lt]: fechaActual } }, // Si la fecha ya es menor a hoy
           {
             [Op.and]: [
               { fechaCierre: fechaActual },
@@ -40,6 +40,36 @@ const verificarCierreSorteos = async () => {
   if (afectados > 0) {
     console.log(`[Sistema] Se han cerrado ${afectados} sorteos automáticamente.`)
   }
+
+  // =========================================================================
+  // LOGICA FAIL-SAFE (AUTOREPARACIÓN PARA RENDER/DESFASES DE RELOJ)
+  // =========================================================================
+  // Buscamos si se cerró erróneamente algún sorteo cuyo tiempo real de cierre NO ha vencido.
+  // Es decir: Que su fecha sea mayor a hoy, o que sea hoy pero su hora de cierre sea estrictamente mayor a la actual.
+  const [reabiertos] = await Sorteos.update(
+    { estado: 'Abierto' },
+    {
+      where: {
+        estado: 'Cerrado', // Revisamos los que están cerrados
+        [Op.or]: [
+          { fechaCierre: { [Op.gt]: fechaActual } }, // Caso A: La fecha de cierre es en el futuro
+          {
+            [Op.and]: [
+              { fechaCierre: fechaActual },
+              { horaCierre: { [Op.gt]: horaActual } }, // Caso B: Es hoy, pero la hora de cierre aún no llega
+            ],
+          },
+        ],
+      },
+    }
+  )
+
+  if (reabiertos > 0) {
+    console.warn(
+      `[ALERTA SISTEMA]: Se detectaron ${reabiertos} sorteos cerrados antes de tiempo por desfase de reloj. ¡Han sido reabiertos automáticamente!`
+    )
+  }
+  // =========================================================================
 }
 
 const actualizarSorteo = async (id, data) => {
@@ -52,13 +82,11 @@ const actualizarSorteo = async (id, data) => {
       return { code: 404, message: 'Sorteo no encontrado.' }
     }
 
-    // 2. CORREGIDO: Bloqueo de seguridad inteligente
-    // Solo bloquea si REALMENTE se intenta cambiar a un ID de catálogo o cifra distinto al actual
+    // 2. Bloqueo de seguridad inteligente
     const cambiaCatalogo = CatalogoId && CatalogoId !== sorteo.CatalogoId
     const cambiaCifra = CifraId && CifraId !== sorteo.CifraId
 
     if (cambiaCatalogo || cambiaCifra) {
-      // Usamos .count() que es más óptimo que .findOne() para verificar existencia
       const tieneVentas = await Tickets.count({ where: { SorteoId: id } })
 
       if (tieneVentas > 0) {
@@ -77,11 +105,8 @@ const actualizarSorteo = async (id, data) => {
       fechaAux.setHours(parseInt(horas), parseInt(minutos) - 5, 0)
 
       data.horaCierre = `${fechaAux.getHours().toString().padStart(2, '0')}:${fechaAux.getMinutes().toString().padStart(2, '0')}:00`
-
-      // Asegurar que la fecha de cierre se mueva en sintonía con la nueva fecha enviada
       data.fechaCierre = data.fechaCierre || fechaSorteo || sorteo.fechaSorteo
     } else if (fechaSorteo && !data.fechaCierre) {
-      // MEJORA: Si solo cambias la fecha del sorteo, la fecha de cierre también debe actualizarse
       data.fechaCierre = fechaSorteo
     }
 
@@ -93,12 +118,11 @@ const actualizarSorteo = async (id, data) => {
       message: 'Sorteo actualizado correctamente',
       data: sorteo,
     }
-
   } catch (error) {
-    console.error("Error al actualizar sorteo:", error.message)
+    console.error('Error al actualizar sorteo:', error.message)
     return {
       code: 500,
-      message: 'Error interno del servidor al intentar actualizar el sorteo: ' + error.message
+      message: 'Error interno del servidor al intentar actualizar el sorteo: ' + error.message,
     }
   }
 }
