@@ -5,5 +5,6 @@ const resultadoRouter = Router()
 
 resultadoRouter.get('/listar/todos', resultadoControllers.listarResultados)
 resultadoRouter.post('/registrar', resultadoControllers.registrarResultados)
+resultadoRouter.put('/actualizar', resultadoControllers.actualizarResultados)
 
 export default resultadoRouter
