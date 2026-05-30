@@ -26,6 +26,12 @@ const obtenerCajaAbierta = async (PuntoVentaId) => {
       },
       {
         model: Movimientos,
+        include: [
+          {
+            model: Usuarios,
+            attributes: ['id', 'nombresCompletos'],
+          },
+        ],
       },
     ],
     order: [['createdAt', 'DESC']],
@@ -39,6 +45,7 @@ const listarTodas = async () => {
     include: [
       {
         model: Movimientos,
+        include: [Usuarios],
       },
       {
         model: Usuarios,
@@ -66,7 +73,15 @@ const listarPorPuntoDeVenta = async (PuntoVentaId) => {
       PuntoVentaId,
     },
     include: [
-      { model: Movimientos },
+      {
+        model: Movimientos,
+        include: [
+          {
+            model: Usuarios,
+            attributes: ['id', 'nombresCompletos'],
+          },
+        ],
+      },
       { model: Usuarios, attributes: ['id', 'nombresCompletos'] }, // Sugerencia: no traigas el password
       { model: PuntosVenta },
     ],

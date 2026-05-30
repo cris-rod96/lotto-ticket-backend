@@ -24,17 +24,25 @@ const listarTodos = async (req, res) => {
 
 const listarAbiertos = async (req, res) => {
   try {
-    // Pasamos req.query para que también herede la paginación y filtros dinámicos
-    const { code, sorteos, totalItems, totalPages, currentPage } =
-      await sorteoServices.listarAbiertos(req.query)
+    // 1. Extraemos los parámetros de forma segura
+    const params = req.query || {}
 
-    res.status(code).json({
+    // 2. Imprimimos para depurar: Si aquí sale undefined, es tu frontend/router
+    console.log('Controlador - Parámetros recibidos:', params)
+
+    // 3. Llamamos al servicio pasando el objeto completo
+    const { code, sorteos, totalItems, totalPages, currentPage } =
+      await sorteoServices.listarAbiertos(params)
+
+    // 4. Respondemos
+    res.status(code || 200).json({
       sorteos,
       totalItems,
       totalPages,
       currentPage,
     })
   } catch (error) {
+    console.error('Error en listarAbiertos:', error)
     const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
     res.status(500).json({
       message: msg,

@@ -12,5 +12,4 @@ sorteoRouter.patch('/actualizar-sorteo/:id', sorteoControllers.actualizarSorteo)
 
 sorteoRouter.delete('/eliminar/:id', sorteoControllers.eliminarSorteo)
 
-
 export default sorteoRouter

@@ -87,16 +87,29 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
     const limit = parseInt(queryParams.limit, 10) || 8
     const offset = (page - 1) * limit
 
-    // 2. Consulta paginada a la base de datos
+    // 2. Construcción dinámica del WHERE
+    const whereConditions = { PuntoVentaId: id }
+
+    // Filtrar por estado del ticket
+    if (queryParams.estado && queryParams.estado !== 'Todos') {
+      whereConditions.estado = queryParams.estado
+    }
+
+    // Filtrar por fecha del sorteo (se debe incluir la relación de Sorteos)
+    const sorteoInclude = {
+      model: Sorteos,
+      include: [Catalogos, Cifras],
+    }
+
+    if (queryParams.fecha && queryParams.fecha !== 'Todos') {
+      sorteoInclude.where = { fechaSorteo: queryParams.fecha }
+    }
+
+    // 3. Consulta paginada a la base de datos
     const { count, rows } = await Tickets.findAndCountAll({
-      where: {
-        PuntoVentaId: id,
-      },
+      where: whereConditions,
       include: [
-        {
-          model: Sorteos,
-          include: [Catalogos, Cifras],
-        },
+        sorteoInclude, // Incluimos sorteo con el filtro de fecha aplicado si existe
         { model: PuntosVenta },
         { model: Usuarios },
         { model: DetallesTicket },
@@ -104,10 +117,9 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
       order: [['createdAt', 'DESC']],
       limit: limit,
       offset: offset,
-      distinct: true, // Vital para evitar conteos duplicados por los DetallesTicket
+      distinct: true,
     })
 
-    // 3. Retornamos la estructura con metadatos
     return {
       code: 200,
       data: {
@@ -122,5 +134,4 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
     return { code: 500, message: error.message }
   }
 }
-
 export { listarPorPuntoDeVenta, listarTickets }

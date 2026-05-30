@@ -2,37 +2,34 @@ import { resultadoServices } from '../../services/index.services.js'
 
 const listarResultados = async (req, res) => {
   try {
-    // 1. Capturamos los query params de paginación con valores por defecto eficientes
+    // 1. Capturamos los filtros de paginación Y los nuevos filtros de búsqueda
     const filtros = {
       fecha: req.query.fecha || null,
-      page: req.query.page || 1,
-      limit: req.query.limit || 10, // Puedes ajustar el límite por defecto que prefieras
+      jornada: req.query.jornada || 'Todos',
+      utilidad: req.query.utilidad || 'Todos',
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 6, // Ajustado a tu preferencia
     }
 
-    // 2. Desestructuramos la nueva respuesta enriquecida del servicio
+    // 2. Llamamos al servicio pasando todos los filtros
     const { code, message, data, totalItems, totalPages, currentPage } =
       await resultadoServices.listarResultados(filtros)
 
-    // 3. Si todo sale bien, enviamos la data junto con los metadatos de paginación
-    if (data) {
+    // 3. Respuesta al cliente
+    if (code === 200) {
       return res.status(code).json({
-        data, // El array de resultados (rows)
-        totalItems, // Cantidad de registros totales en la base de datos
-        totalPages, // Cantidad de páginas totales
-        currentPage, // Confirmación de la página actual servida
+        data,
+        totalItems,
+        totalPages,
+        currentPage,
       })
     }
 
-    // En caso de que el servicio retorne un código de error controlado
     return res.status(code).json({ message })
   } catch (error) {
-    console.log(error)
-    const msg =
-      error.message ||
-      'Error interno en el servidor. Intente de nuevo o contacte con un administrador.'
-
+    console.error('Error en controlador listarResultados:', error)
     res.status(500).json({
-      message: msg,
+      message: error.message || 'Error interno del servidor.',
     })
   }
 }

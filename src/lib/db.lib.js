@@ -72,8 +72,8 @@ Movimientos.belongsTo(Cajas, { foreignKey: 'CajaId' })
 PuntosVenta.hasMany(Movimientos, { foreignKey: 'PuntoVentaId' })
 Movimientos.belongsTo(PuntosVenta, { foreignKey: 'PuntoVentaId' })
 
-Usuarios.hasMany(Movimientos, { foreignKey: 'UsuarioId' })
-Movimientos.belongsTo(Usuarios, { foreignKey: 'Usuarios' })
+Usuarios.hasOne(Movimientos, { foreignKey: 'UsuarioId' })
+Movimientos.belongsTo(Usuarios, { foreignKey: 'UsuarioId' })
 
 Sorteos.hasOne(Resultados, { foreignKey: 'SorteoId' })
 Resultados.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
