@@ -87,6 +87,59 @@ const getGlobalStats = async () => {
   }
 }
 
+const getVendedorStats = async (puntoVentaId) => {
+  const hoy = new Date().toISOString().split('T')[0]
+
+  try {
+    // 1. Ventas de hoy: Sumando los montos apostados de los detalles
+    // que pertenecen a tickets NO ANULADOS del vendedor.
+    const ventasHoy =
+      (await DetallesTicket.sum('montoApostado', {
+        include: [
+          {
+            model: Tickets,
+            as: 'Ticket', // Verifica que esta sea el alias en tus asociaciones
+            attributes: [],
+            where: {
+              PuntoVentaId: puntoVentaId,
+              estado: { [Op.ne]: 'Anulado' },
+              createdAt: { [Op.gte]: `${hoy} 00:00:00` },
+            },
+          },
+        ],
+      })) || 0
+
+    // 2. Premios pendientes: Sumando el montoTotalPremio directo del modelo Tickets
+    const premiosPendientes =
+      (await Tickets.sum('montoTotalPremio', {
+        where: {
+          PuntoVentaId: puntoVentaId,
+          resultado: 'Ganador',
+          estado: 'Pendiente', // Ajusta si el estado se llama igual en tu enum
+        },
+      })) || 0
+
+    // 3. Cantidad de tickets de hoy
+    const ticketsHoy = await Tickets.count({
+      where: {
+        PuntoVentaId: puntoVentaId,
+        createdAt: { [Op.gte]: `${hoy} 00:00:00` },
+      },
+    })
+
+    return {
+      stats: {
+        ventasHoy: Number(ventasHoy),
+        premiosPendientes: Number(premiosPendientes),
+        ticketsHoy: ticketsHoy,
+      },
+    }
+  } catch (error) {
+    console.error('Error en getVendedorStats:', error)
+    throw error
+  }
+}
+
 const parseNum = (val) => Number(val) || 0
 
 const getReporteFinanciero = async (filtros) => {
@@ -257,4 +310,4 @@ const getReporteFinanciero = async (filtros) => {
   }
 }
 
-export { getGlobalStats, getReporteFinanciero }
+export { getGlobalStats, getReporteFinanciero, getVendedorStats }

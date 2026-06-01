@@ -14,6 +14,25 @@ const getDashboardStats = async (req, res) => {
     })
   }
 }
+const getVendedorDashboardStats = async (req, res) => {
+  try {
+    // Obtenemos el ID del punto de venta desde el usuario autenticado (asumiendo que viene en req.user)
+    const { id } = req.params
+
+    // Llamamos al servicio que creamos hace un momento
+    const { stats } = await statsServices.getVendedorStats(id)
+
+    res.status(200).json({
+      success: true,
+      stats,
+    })
+  } catch (error) {
+    console.error('Error en getVendedorDashboardStats:', error)
+    res.status(500).json({
+      message: 'Error al obtener estadísticas del punto de venta',
+    })
+  }
+}
 
 const getReportStats = async (req, res) => {
   try {
@@ -73,4 +92,4 @@ const getReportStats = async (req, res) => {
   }
 }
 
-export { getDashboardStats, getReportStats }
+export { getDashboardStats, getReportStats, getVendedorDashboardStats }
