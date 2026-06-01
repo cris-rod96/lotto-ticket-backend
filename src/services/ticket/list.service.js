@@ -92,7 +92,15 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
 
     // Filtrar por estado del ticket
     if (queryParams.estado && queryParams.estado !== 'Todos') {
-      whereConditions.estado = queryParams.estado
+      if (queryParams.estado === 'Ganador_Pendiente') {
+        whereConditions.resultado = 'Ganador'
+        whereConditions.estado = 'Pendiente'
+      } else if (queryParams.estado === 'Ganador_Pagado') {
+        whereConditions.resultado = 'Ganador'
+        whereConditions.estado = 'Pagado'
+      } else if (queryParams.estado === 'Pendiente' || queryParams.estado === 'No Ganador') {
+        whereConditions.resultado = queryParams.estado
+      }
     }
 
     // Filtrar por fecha del sorteo (se debe incluir la relación de Sorteos)

@@ -20,6 +20,9 @@ const listarPuntosVentas = async () => {
           model: Usuarios,
           attributes: ['id', 'nombresCompletos', 'alias', 'activo'],
         },
+        {
+          model: Cajas,
+        },
       ],
       order: [['createdAt', 'DESC']],
     })
