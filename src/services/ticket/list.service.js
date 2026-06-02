@@ -24,7 +24,7 @@ const listarTickets = async (queryParams = {}) => {
 
     const whereTicket = {}
     if (codigo) {
-      whereTicket.codigo = { [Op.like]: `%${codigo}%` }
+      whereTicket.codigo = { [Op.iLike]: `%${codigo}%` }
     }
     if (PuntoVentaId && PuntoVentaId !== 'Todos') {
       whereTicket.PuntoVentaId = PuntoVentaId
