@@ -7,6 +7,9 @@ sorteoRouter.get('/listar/todos', sorteoControllers.listarTodos)
 sorteoRouter.get('/listar/abiertos', sorteoControllers.listarAbiertos)
 sorteoRouter.get('/listar/cerrados', sorteoControllers.listarCerrados)
 
+// Nueva ruta para obtener reportes filtrados por punto de venta
+sorteoRouter.get('/listar/por-punto/:puntoVentaId', sorteoControllers.listarPorPunto)
+
 sorteoRouter.post('/crear', sorteoControllers.crearSorteo)
 sorteoRouter.patch('/actualizar-sorteo/:id', sorteoControllers.actualizarSorteo)
 

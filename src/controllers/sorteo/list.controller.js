@@ -22,6 +22,35 @@ const listarTodos = async (req, res) => {
   }
 }
 
+const listarPorPunto = async (req, res) => {
+  try {
+    // Obtenemos el ID desde los parámetros de la URL (:puntoVentaId)
+    const { puntoVentaId } = req.params
+
+    if (!puntoVentaId) {
+      return res.status(400).json({
+        message: 'El parámetro puntoVentaId es obligatorio.',
+      })
+    }
+
+    // Llamamos al servicio pasando el ID y los filtros de la URL (req.query)
+    const { code, sorteos, totalItems, totalPages, currentPage } =
+      await sorteoServices.listarPorPunto(puntoVentaId, req.query)
+
+    res.status(code).json({
+      sorteos,
+      totalItems,
+      totalPages,
+      currentPage,
+    })
+  } catch (error) {
+    console.error('Error en listarPorPunto:', error)
+    res.status(500).json({
+      message: error.message || 'Error interno al consultar reportes por punto de venta',
+    })
+  }
+}
+
 const listarAbiertos = async (req, res) => {
   try {
     // 1. Extraemos los parámetros de forma segura
@@ -70,4 +99,4 @@ const listarCerrados = async (req, res) => {
   }
 }
 
-export { listarAbiertos, listarCerrados, listarTodos }
+export { listarAbiertos, listarCerrados, listarPorPunto, listarTodos }
