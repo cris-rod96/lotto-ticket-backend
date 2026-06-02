@@ -2,8 +2,16 @@ import { ticketServices } from '../../services/index.services.js'
 
 const listarTickets = async (req, res) => {
   try {
-    // Recibimos de forma limpia los filtros y la paginación desde la URL (req.query)
-    const { page, limit, PuntoVentaId, fechaSorteo, estadoLiquidacion } = req.query
+    const {
+      page,
+      limit,
+      PuntoVentaId,
+      fechaSorteo,
+      estadoLiquidacion,
+      codigo,
+      fechaInicio,
+      fechaFin,
+    } = req.query
 
     const { code, message, data } = await ticketServices.listarTickets({
       page,
@@ -11,16 +19,17 @@ const listarTickets = async (req, res) => {
       PuntoVentaId,
       fechaSorteo,
       estadoLiquidacion,
+      codigo,
+      fechaInicio,
+      fechaFin,
     })
 
-    // Si todo sale bien, 'data' contendrá: { tickets, totalItems, totalPages, currentPage }
     res.status(code).json(data ? { ...data, message } : { message })
   } catch (error) {
     const msg = error.message || 'Error crítico en el servidor. Intente de nuevo'
     res.status(500).json({ message: msg })
   }
 }
-
 const listarPorPuntoDeVenta = async (req, res) => {
   try {
     const { id } = req.params

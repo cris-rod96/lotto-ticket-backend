@@ -1,3 +1,4 @@
+import { Op } from 'sequelize'
 import {
   Catalogos,
   Cifras,
@@ -14,20 +15,21 @@ import {
 
 const listarTickets = async (queryParams = {}) => {
   try {
-    // 1. Extraemos los parámetros de paginación y filtros con valores por defecto
     const page = parseInt(queryParams.page, 10) || 1
-    const limit = parseInt(queryParams.limit, 10) || 8 // Mismo tamaño que tu frontend
+    const limit = parseInt(queryParams.limit, 10) || 8
     const offset = (page - 1) * limit
 
-    const { PuntoVentaId, fechaSorteo, estadoLiquidacion } = queryParams
+    const { PuntoVentaId, fechaSorteo, estadoLiquidacion, codigo, fechaInicio, fechaFin } =
+      queryParams
 
-    // 2. Construimos el "where" principal para el Ticket
     const whereTicket = {}
+    if (codigo) {
+      whereTicket.codigo = { [Op.like]: `%${codigo}%` }
+    }
     if (PuntoVentaId && PuntoVentaId !== 'Todos') {
       whereTicket.PuntoVentaId = PuntoVentaId
     }
 
-    // Adaptación de tu lógica multi-criterio de estados a la base de datos
     if (estadoLiquidacion && estadoLiquidacion !== 'Todos') {
       if (estadoLiquidacion === 'Ganador_Pendiente') {
         whereTicket.resultado = 'Ganador'
@@ -40,19 +42,31 @@ const listarTickets = async (queryParams = {}) => {
       }
     }
 
-    // 3. Construimos el "where" para la relación con Sorteos (Filtro por Fecha)
     const whereSorteo = {}
     if (fechaSorteo && fechaSorteo !== 'Todos') {
       whereSorteo.fechaSorteo = fechaSorteo
     }
 
-    // 4. Ejecutamos findAndCountAll con límites (Limit y Offset)
+    if (fechaInicio && fechaFin) {
+      whereTicket.createdAt = {
+        [Op.between]: [new Date(fechaInicio), new Date(fechaFin)],
+      }
+    } else if (fechaInicio) {
+      whereTicket.createdAt = {
+        [Op.gte]: new Date(fechaInicio),
+      }
+    } else if (fechaFin) {
+      whereTicket.createdAt = {
+        [Op.lte]: new Date(fechaFin),
+      }
+    }
+
     const { count, rows } = await Tickets.findAndCountAll({
       where: whereTicket,
       include: [
         {
           model: Sorteos,
-          where: whereSorteo, // Aplica el filtro de fecha directamente en el JOIN
+          where: whereSorteo,
           include: [Catalogos, Cifras],
         },
         { model: PuntosVenta, attributes: ['nombre'] },
@@ -62,10 +76,9 @@ const listarTickets = async (queryParams = {}) => {
       order: [['createdAt', 'DESC']],
       limit: limit,
       offset: offset,
-      distinct: true, // Evita problemas de conteo duplicado al usar Includes de muchos a muchos (DetallesTicket)
+      distinct: true,
     })
 
-    // 5. Retornamos la data paginada estructurada
     return {
       code: 200,
       data: {
