@@ -3,16 +3,20 @@ import {
   Catalogos,
   Cifras,
   Clientes,
+  DetallesResultado,
   DetallesTicket,
   Ganadores,
   Movimientos,
   PuntosVenta,
+  Resultados,
   SaldosCupo,
   Sorteos,
   sq,
+  Suertes,
   Tickets,
   Usuarios,
 } from '../../lib/db.lib.js'
+import DetallesSuerte from '../../models/detalle-suerte/detalleSuerte.model.js'
 
 // const restarDiasHabiles = (fecha, dias) => {
 //   let fechaResult = new Date(fecha)
@@ -82,18 +86,12 @@ const expirarTicketsPorVencimiento = async () => {
 }
 
 const pagarTicket = async (ticketId, usuarioId, cajaId) => {
-  // Iniciamos la transacción para asegurar la integridad de los datos
   const t = await sq.transaction()
 
   try {
     // 1. Buscar el ticket con LOCK
     const ticket = await Tickets.findByPk(ticketId, {
-      include: [
-        {
-          model: Sorteos,
-          required: true,
-        },
-      ],
+      include: [{ model: Sorteos, required: true }],
       transaction: t,
       lock: t.LOCK.UPDATE,
     })
@@ -126,7 +124,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       return { code: 400, message: 'El ticket no tiene un monto de premio válido.' }
     }
 
-    // 3. Validar Caja y Saldo con LOCK
+    // 3. Validar Caja y Saldo
     const caja = await Cajas.findByPk(cajaId, {
       transaction: t,
       lock: t.LOCK.UPDATE,
@@ -145,7 +143,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       }
     }
 
-    // 4. Registrar Movimiento de Egreso
+    // 4, 5, 6, 7, 8. Ejecución de operaciones de escritura
     const movimiento = await Movimientos.create(
       {
         tipo: 'Egreso',
@@ -159,7 +157,6 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       { transaction: t }
     )
 
-    // 5. Actualizar Saldo de la Caja
     await caja.update(
       {
         saldoActual: parseFloat(caja.saldoActual) - totalAPagar,
@@ -168,11 +165,9 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       { transaction: t }
     )
 
-    // 6. Actualizar Contadores del Sorteo
     await ticket.Sorteo.decrement('montoPorPagar', { by: totalAPagar, transaction: t })
     await ticket.Sorteo.increment('montoPagado', { by: totalAPagar, transaction: t })
 
-    // 7. ACTUALIZACIÓN CRÍTICA: Cambiar estado en tabla Ganadores
     await Ganadores.update(
       {
         estadoPago: 'Pagado',
@@ -184,7 +179,6 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       }
     )
 
-    // 8. Finalizar cambiando el estado del Ticket
     await ticket.update(
       {
         estado: 'Pagado',
@@ -194,10 +188,22 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       { transaction: t }
     )
 
-    // Confirmamos transacción
+    // CONFIRMACIÓN DE TRANSACCIÓN
     await t.commit()
+  } catch (error) {
+    // Solo hacemos rollback si la transacción sigue abierta
+    if (t && !t.finished) {
+      await t.rollback()
+    }
+    console.error('Error en pagarTicket:', error)
+    return {
+      code: 500,
+      message: 'Error al procesar el pago: ' + error.message,
+    }
+  }
 
-    // 9. Retorno de datos
+  // 9. LECTURA DE DATOS (Fuera del try/catch de la transacción)
+  try {
     const cajaFinal = await Cajas.findByPk(cajaId)
     const ticketPagadoCompleto = await Tickets.findByPk(ticketId, {
       include: [
@@ -207,26 +213,50 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
         { model: Clientes },
         {
           model: Sorteos,
-          include: [{ model: Catalogos }, { model: Cifras }],
+          include: [
+            { model: Catalogos },
+            { model: Cifras },
+            {
+              model: Resultados,
+              include: [
+                {
+                  model: DetallesResultado,
+                  include: [
+                    {
+                      model: Suertes,
+                      include: [
+                        {
+                          model: DetallesSuerte,
+                          where: { PuntoVentaId: ticketId.PuntoVentaId },
+                          required: false,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
       ],
     })
 
     return {
       code: 200,
-      message: `¡Éxito! Se pagaron $${totalAPagar.toFixed(2)} correctamente.`,
+      message: '¡Pago exitoso!',
       caja: cajaFinal,
       ticket: ticketPagadoCompleto,
     }
-  } catch (error) {
-    if (t) await t.rollback()
-    console.error('Error en pagarTicket:', error.message)
+  } catch (readError) {
+    // Si llegamos aquí, el pago ya se guardó, pero falló la carga de datos para la UI
     return {
-      code: 500,
-      message: 'Error crítico en el servidor: ' + error.message,
+      code: 200,
+      message: 'Pago procesado, pero hubo un error al obtener la información actualizada.',
+      error: readError.message,
     }
   }
 }
+
 const anularTicket = async (ticketId, usuarioId) => {
   const t = await sq.transaction()
 
