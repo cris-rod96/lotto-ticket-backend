@@ -2,11 +2,26 @@ import { Roles, Usuarios } from '../../lib/db.lib.js'
 import { bcrypUtils } from '../../utils/index.utils.js'
 
 const actualizarUsuario = async (id, data, user) => {
-  const { RolId } = data
+  // Extraemos 'clave' de los datos para procesarla aparte
+  const { RolId, clave, ...datosParaActualizar } = data
 
   const usuario = await Usuarios.findByPk(id)
   if (!usuario) return { code: 404, message: 'Usuario no encontrado.' }
 
+  // 1. Lógica de actualización de contraseña
+  if (clave) {
+    // Comparamos la nueva clave con la actual en la BD
+    const esLaMisma = await bcrypUtils.compararClave(clave, usuario.clave)
+
+    if (esLaMisma) {
+      return { code: 400, message: 'La nueva contraseña no puede ser igual a la anterior.' }
+    }
+
+    // Si es distinta, la hasheamos usando tu utilidad
+    datosParaActualizar.clave = await bcrypUtils.hashearClave(clave)
+  }
+
+  // 2. Lógica de validación de roles
   if (RolId) {
     const rolDestino = await Roles.findByPk(RolId)
     if (!rolDestino) return { code: 400, message: 'El rol especificado no existe.' }
@@ -20,16 +35,15 @@ const actualizarUsuario = async (id, data, user) => {
         }
       }
     }
+    datosParaActualizar.RolId = RolId
   }
 
-  // Actualizamos el usuario
-  await usuario.update(data)
+  // 3. Actualizamos solo los campos permitidos (incluye la nueva clave si se cambió)
+  await usuario.update(datosParaActualizar)
 
-  // 1. Convertimos a objeto plano de JS
+  // 4. Formateamos respuesta (eliminamos clave por seguridad antes de responder)
   const usuarioSinClave = usuario.toJSON()
-
-  // 2. Eliminamos la contraseña (asegúrate de usar el nombre exacto de la columna, ej: 'password' o 'clave')
-  delete usuarioSinClave.clave // Por si acaso usas este nombre
+  delete usuarioSinClave.clave
 
   return {
     code: 200,
@@ -37,6 +51,7 @@ const actualizarUsuario = async (id, data, user) => {
     data: usuarioSinClave,
   }
 }
+
 const actualizarClave = async (id, claveActual, nuevaClave) => {
   const usuario = await Usuarios.findByPk(id)
 

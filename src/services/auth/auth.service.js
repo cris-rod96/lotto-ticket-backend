@@ -19,6 +19,9 @@ const iniciarSesion = async (data) => {
   const claveCorrecta = await bcrypUtils.compararClave(clave, usuario.clave)
   if (!claveCorrecta) return { code: 401, message: 'Alias y/o clave incorrectas' }
 
+  if (!usuario.activo)
+    return { code: 401, message: 'La cuenta de este usuario se encuentra inhabilitada.' }
+
   // 4. Generar JWT (Token de acceso)
   const token = jwtUtils.generarToken(usuario)
 
