@@ -81,8 +81,8 @@ Resultados.belongsTo(Sorteos, { foreignKey: 'SorteoId' })
 Resultados.hasMany(DetallesResultado, { foreignKey: 'ResultadoId' })
 DetallesResultado.belongsTo(Resultados, { foreignKey: 'ResultadoId' })
 
-Tickets.hasMany(Resultados, { foreignKey: 'TicketId' })
-Resultados.belongsTo(Tickets, { foreignKey: 'TicketId' })
+// Tickets.hasMany(Resultados, { foreignKey: 'TicketId' })
+// Resultados.belongsTo(Tickets, { foreignKey: 'TicketId' })
 
 Sorteos.hasMany(SaldosCupo, { foreignKey: 'SorteoId' })
 SaldosCupo.belongsTo(Sorteos, { foreignKey: 'SorteoId' })

@@ -1,9 +1,13 @@
 import {
   Catalogos,
   Cifras,
+  DetallesResultado,
+  DetallesSuerte,
   DetallesTicket,
   PuntosVenta,
+  Resultados,
   Sorteos,
+  Suertes,
   Tickets,
   Usuarios,
 } from '../../lib/db.lib.js'
@@ -106,7 +110,31 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
     // Filtrar por fecha del sorteo (se debe incluir la relación de Sorteos)
     const sorteoInclude = {
       model: Sorteos,
-      include: [Catalogos, Cifras],
+      include: [
+        Catalogos,
+        Cifras,
+        {
+          model: Resultados,
+          include: [
+            {
+              model: DetallesResultado,
+              include: [
+                {
+                  model: Suertes,
+                  include: [
+                    {
+                      model: DetallesSuerte,
+                      // Aquí aplicamos el filtro por el ID del Punto de Venta
+                      where: { PuntoVentaId: id },
+                      required: false, // Usamos false para no excluir suertes que no tengan detalle en este punto
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
     }
 
     if (queryParams.fecha && queryParams.fecha !== 'Todos') {
