@@ -1,3 +1,4 @@
+import { Op } from 'sequelize'
 import { Catalogos, Cifras, DetallesTicket, Sorteos, Tickets, sq } from '../../lib/db.lib.js'
 
 const listarTodos = async (params = {}) => {
@@ -386,13 +387,46 @@ const listarPorPunto = async (puntoVentaId, params = {}) => {
   const limit = parseInt(params.limit, 10) || 10
   const offset = (page - 1) * limit
 
-  // 1. Obtenemos los sorteos únicos (paginados)
+  // 1. Construcción dinámica del filtro
+  const whereSorteo = {}
+
+  if (params.CatalogoId && params.CatalogoId !== 'Todos') {
+    whereSorteo.CatalogoId = params.CatalogoId
+  }
+  if (params.jornada && params.jornada !== 'Todos') {
+    whereSorteo.jornada = params.jornada
+  }
+  if (params.CifraId && params.CifraId !== 'Todos') {
+    whereSorteo.CifraId = params.CifraId
+  }
+  if (params.estado && params.estado !== 'Todos') {
+    whereSorteo.estado = params.estado
+  }
+  // CORRECCIÓN: Agregamos el filtro de fechaSorteo
+  if (params.fechaDesde || params.fechaHasta) {
+    whereSorteo.fechaSorteo = {}
+
+    if (params.fechaDesde && params.fechaHasta) {
+      // Ambos presentes: usamos Op.between
+      whereSorteo.fechaSorteo = { [Op.between]: [params.fechaDesde, params.fechaHasta] }
+    } else if (params.fechaDesde) {
+      // Solo desde: mayor o igual
+      whereSorteo.fechaSorteo = { [Op.gte]: params.fechaDesde }
+    } else if (params.fechaHasta) {
+      // Solo hasta: menor o igual
+      whereSorteo.fechaSorteo = { [Op.lte]: params.fechaHasta }
+    }
+  }
+
+  // 2. Consulta de sorteos con el filtro aplicado
   const { count, rows } = await Sorteos.findAndCountAll({
+    where: whereSorteo,
     include: [
       {
         model: Tickets,
         where: { PuntoVentaId: puntoVentaId },
         attributes: [],
+        required: true, // Asegura que solo traiga sorteos con tickets en ese punto
       },
       Catalogos,
       Cifras,
@@ -403,12 +437,11 @@ const listarPorPunto = async (puntoVentaId, params = {}) => {
     order: [['createdAt', 'DESC']],
   })
 
-  // 2. Procesamos cada sorteo con consultas aisladas para evitar errores y duplicados
+  // ... (el resto de tu lógica de stats permanece igual)
   const sorteosData = await Promise.all(
     rows.map(async (sorteo) => {
       const json = sorteo.get({ plain: true })
 
-      // A) Consulta para el monto recaudado (Sumamos desde DetallesTickets)
       const statsRecaudado = await DetallesTicket.findOne({
         attributes: [[sq.fn('SUM', sq.col('montoApostado')), 'total']],
         include: [
@@ -421,7 +454,6 @@ const listarPorPunto = async (puntoVentaId, params = {}) => {
         raw: true,
       })
 
-      // B) Consulta para Premios y Tickets (Directo en la tabla Tickets, sin JOIN)
       const statsTickets = await Tickets.findOne({
         where: { SorteoId: sorteo.id, PuntoVentaId: puntoVentaId },
         attributes: [
