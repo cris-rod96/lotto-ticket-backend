@@ -15,19 +15,57 @@ const listarTodas = async (req, res) => {
   }
 }
 
+// const listarPorPuntoDeVenta = async (req, res) => {
+//   try {
+//     const { id } = req.params
+//     console.log('--- DEBUG CAJAS ---')
+//     console.log('Ruta:', req.path)
+//     console.log('Query (req.query):', req.query)
+//     console.log('Params (req.params):', req.params)
+//     // Combinamos el ID con los query params (filtros + paginación)
+//     const result = await cajaServices.listarPorPuntoDeVenta({
+//       PuntoVentaId: id,
+//       ...req.query,
+//     })
+
+//     const { code, data, message } = result
+//     res.status(code).json(data ? data : { message })
+//   } catch (error) {
+//     console.log(error)
+//     res.status(500).json({ message: error.message })
+//   }
+// }
+
 const listarPorPuntoDeVenta = async (req, res) => {
   try {
     const { id } = req.params
-    const { code, cajas, message } = await cajaServices.listarPorPuntoDeVenta(id)
-    res.status(code).json(cajas ? { cajas } : { message })
-  } catch (error) {
-    const msg =
-      error.message ||
-      'Error interno en el servidor. Intente de nuevo o contacte con un administrador.'
+    console.log(req)
+    // Extraemos filtros y paginación de la URL (ej: /listar/punto-de-venta/123?fechaInicio=2026-06-01&page=1)
+    const { fechaInicio, fechaFin, page, limit } = req.query
 
-    res.status(500).json({
-      message: msg,
+    // Llamamos al servicio pasando el ID y las opciones
+    const result = await cajaServices.listarPorPuntoDeVenta(id, {
+      fechaInicio,
+      fechaFin,
+      page,
+      limit,
     })
+
+    const { code, cajas, pagination, resumenGlobal, message } = result
+
+    // Si todo salió bien, enviamos toda la data, incluyendo la info de paginación
+    if (code === 200) {
+      return res.status(200).json({
+        cajas,
+        pagination, // <--- Nuevo: crucial para que el frontend sepa cuantas páginas hay
+        resumenGlobal,
+      })
+    }
+
+    res.status(code).json({ message })
+  } catch (error) {
+    console.error('ERROR EN CONTROLADOR CAJAS:', error)
+    res.status(500).json({ message: 'Error interno del servidor' })
   }
 }
 

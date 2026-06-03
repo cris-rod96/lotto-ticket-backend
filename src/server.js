@@ -7,6 +7,7 @@ import rootRouter from './routes/index.routes.js'
 const server = express()
 
 server.use(json({ limit: '5mb' }))
+server.use(express.urlencoded({ extended: true }))
 server.use(cors())
 server.use(cookieParser())
 server.use(logger('dev'))
