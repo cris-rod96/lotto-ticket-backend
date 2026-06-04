@@ -36,44 +36,16 @@ const getVendedorDashboardStats = async (req, res) => {
 
 const getReportStats = async (req, res) => {
   try {
-    const { dateFilter, puntoVentaId } = req.query
+    const { fechaInicio, fechaFin, puntoVentaId } = req.query
 
-    // Obtención de fecha local adaptada a la zona horaria de Ecuador (Evita desfases UTC)
-    const ahora = new Date()
-    const anio = ahora.getFullYear()
-    const mes = String(ahora.getMonth() + 1).padStart(2, '0')
-    const dia = String(ahora.getDate()).padStart(2, '0')
-
-    let fechaInicio = `${anio}-${mes}-${dia}`
-    let fechaFin = fechaInicio
-
-    if (dateFilter === 'Ayer') {
-      const ayer = new Date()
-      ayer.setDate(ayer.getDate() - 1)
-
-      const aAnio = ayer.getFullYear()
-      const aMes = String(ayer.getMonth() + 1).padStart(2, '0')
-      const aDia = String(ayer.getDate()).padStart(2, '0')
-
-      fechaInicio = `${aAnio}-${aMes}-${aDia}`
-      fechaFin = fechaInicio
-    } else if (dateFilter === 'Semana') {
-      const sieteDiasAtras = new Date()
-      sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 7)
-
-      const sAnio = sieteDiasAtras.getFullYear()
-      const sMes = String(sieteDiasAtras.getMonth() + 1).padStart(2, '0')
-      const sDia = String(sieteDiasAtras.getDate()).padStart(2, '0')
-
-      fechaInicio = `${sAnio}-${sMes}-${sDia}`
-    } else if (dateFilter === 'Mes') {
-      const mAnio = ahora.getFullYear()
-      const mMes = String(ahora.getMonth() + 1).padStart(2, '0')
-
-      fechaInicio = `${mAnio}-${mMes}-01`
+    // Validación básica: asegurarnos de que el usuario envíe las fechas
+    if (!fechaInicio || !fechaFin) {
+      return res.status(400).json({
+        message: 'Es necesario especificar una fecha de inicio y una fecha de fin.',
+      })
     }
 
-    // Invocamos al servicio avanzado
+    // Invocamos al servicio directamente con los parámetros recibidos
     const result = await statsServices.getReporteFinanciero({
       fechaInicio,
       fechaFin,
@@ -87,9 +59,8 @@ const getReportStats = async (req, res) => {
   } catch (error) {
     console.error('Error en getReportStats:', error)
     res.status(500).json({
-      message: 'Error al procesar las estadísticas estructuradas del reporte',
+      message: 'Error al procesar el reporte financiero solicitado.',
     })
   }
 }
-
 export { getDashboardStats, getReportStats, getVendedorDashboardStats }

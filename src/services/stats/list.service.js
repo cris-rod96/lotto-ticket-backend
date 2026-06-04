@@ -146,41 +146,38 @@ const getReporteFinanciero = async (filtros) => {
   try {
     const { fechaInicio, fechaFin, puntoVentaId } = filtros
 
+    // Validación y formateo de fechas para asegurar el rango 00:00:00 a 23:59:59
+    const start = `${fechaInicio} 00:00:00`
+    const end = `${fechaFin} 23:59:59`
+
     // Condiciones base de filtrado por punto de venta
     const pvFiltroTicket =
       puntoVentaId && puntoVentaId !== 'Todos' ? { PuntoVentaId: puntoVentaId } : {}
     const pvFiltroMov =
       puntoVentaId && puntoVentaId !== 'Todos' ? { PuntoVentaId: puntoVentaId } : {}
 
-    // 1. OBTENER VENTAS REALES AGRUPADAS POR SUCURSAL (CON SUBCONSULTA PARA EVITAR DUPLICADOS)
+    // 1. OBTENER VENTAS REALES
     const ventasQuery = await Tickets.findAll({
       attributes: [
         'PuntoVentaId',
-        // Cuenta los boletos físicos reales de forma exacta
         [fn('COUNT', col('id')), 'cantidadTickets'],
-        // Subconsulta pura para sumar los detalles de cada ticket sin romper el conteo
         [
-          literal(`COALESCE(SUM((
-            SELECT SUM("montoApostado") 
-            FROM "DetallesTicket" 
-            WHERE "DetallesTicket"."TicketId" = "Tickets"."id"
-          )), 0)`),
+          literal(
+            `COALESCE(SUM((SELECT SUM("montoApostado") FROM "DetallesTicket" WHERE "DetallesTicket"."TicketId" = "Tickets"."id")), 0)`
+          ),
           'totalVendido',
         ],
       ],
       where: {
         estado: { [Op.ne]: 'Anulado' },
-        createdAt: {
-          [Op.gte]: `${fechaInicio} 00:00:00`,
-          [Op.lte]: `${fechaFin} 23:59:59`,
-        },
+        createdAt: { [Op.between]: [start, end] },
         ...pvFiltroTicket,
       },
       group: ['PuntoVentaId'],
       raw: true,
     })
 
-    // 2. OBTENER PREMIOS GANADORES AGRUPADOS POR SUCURSAL
+    // 2. OBTENER PREMIOS GANADORES
     const premiosQuery = await Tickets.findAll({
       attributes: [
         'PuntoVentaId',
@@ -197,10 +194,7 @@ const getReporteFinanciero = async (filtros) => {
           model: Sorteos,
           attributes: [],
           where: {
-            fechaSorteo: {
-              [Op.gte]: fechaInicio,
-              [Op.lte]: fechaFin,
-            },
+            fechaSorteo: { [Op.between]: [fechaInicio, fechaFin] },
           },
         },
       ],
@@ -208,32 +202,24 @@ const getReporteFinanciero = async (filtros) => {
       raw: true,
     })
 
-    // 3. OBTENER OTROS MOVIMIENTOS DE CAJA AGRUPADOS (Gastos, Ajustes, etc.)
+    // 3. OBTENER OTROS MOVIMIENTOS
     const movimientosQuery = await Movimientos.findAll({
       attributes: ['PuntoVentaId', 'tipo', [fn('SUM', col('monto')), 'totalMonto']],
       where: {
-        createdAt: {
-          [Op.gte]: `${fechaInicio} 00:00:00`,
-          [Op.lte]: `${fechaFin} 23:59:59`,
-        },
-        categoria: {
-          [Op.notIn]: ['Venta Ticket', 'Pago Premio', 'Anulacion'],
-        },
+        createdAt: { [Op.between]: [start, end] },
+        categoria: { [Op.notIn]: ['Venta Ticket', 'Pago Premio', 'Anulacion'] },
         ...pvFiltroMov,
       },
       group: ['PuntoVentaId', 'tipo'],
       raw: true,
     })
 
-    // 4. ESTRUCTURAR MAPAS DE DATOS PARA PROCESAMIENTO RÁPIDO O(1)
+    // 4. ESTRUCTURAR MAPAS DE DATOS
     const ventasMap = {}
     ventasQuery.forEach((v) => {
-      const pvId = v.PuntoVentaId
-      if (pvId) {
-        ventasMap[pvId] = {
-          totalVendido: parseNum(v.totalVendido),
-          cantidadTickets: parseInt(v.cantidadTickets) || 0,
-        }
+      ventasMap[v.PuntoVentaId] = {
+        totalVendido: parseNum(v.totalVendido),
+        cantidadTickets: parseInt(v.cantidadTickets) || 0,
       }
     })
 
@@ -247,23 +233,17 @@ const getReporteFinanciero = async (filtros) => {
 
     const cajaMap = {}
     movimientosQuery.forEach((m) => {
-      if (!cajaMap[m.PuntoVentaId]) {
-        cajaMap[m.PuntoVentaId] = { ingresosCaja: 0, egresosCaja: 0 }
-      }
-      if (m.tipo === 'Ingreso') {
-        cajaMap[m.PuntoVentaId].ingresosCaja += parseNum(m.totalMonto)
-      } else if (m.tipo === 'Egreso') {
-        cajaMap[m.PuntoVentaId].egresosCaja += parseNum(m.totalMonto)
-      }
+      if (!cajaMap[m.PuntoVentaId]) cajaMap[m.PuntoVentaId] = { ingresosCaja: 0, egresosCaja: 0 }
+      if (m.tipo === 'Ingreso') cajaMap[m.PuntoVentaId].ingresosCaja += parseNum(m.totalMonto)
+      else if (m.tipo === 'Egreso') cajaMap[m.PuntoVentaId].egresosCaja += parseNum(m.totalMonto)
     })
 
-    // 5. CONSOLIDAR LISTADO DE SUCURSALES DINÁMICAMENTE
+    // 5. CONSOLIDAR
     const sucursalesIds = new Set([
       ...Object.keys(ventasMap),
       ...Object.keys(premiosMap),
       ...Object.keys(cajaMap),
     ])
-
     let detalleSucursales = []
     let kpisGlobales = {
       ventasTotales: 0,
@@ -280,7 +260,6 @@ const getReporteFinanciero = async (filtros) => {
 
       const utilidad = v.totalVendido - p.totalPremios + (c.ingresosCaja - c.egresosCaja)
 
-      // Acumuladores globales para las tarjetas del dashboard
       kpisGlobales.ventasTotales += v.totalVendido
       kpisGlobales.premiosPorPagar += p.totalPremios
       kpisGlobales.otrosIngresos += c.ingresosCaja
@@ -299,13 +278,9 @@ const getReporteFinanciero = async (filtros) => {
       })
     })
 
-    return {
-      code: 200,
-      stats: kpisGlobales,
-      sucursales: detalleSucursales,
-    }
+    return { code: 200, stats: kpisGlobales, sucursales: detalleSucursales }
   } catch (error) {
-    console.error('Error en getReporteFinanciero Service:', error)
+    console.error('Error en getReporteFinanciero:', error)
     throw error
   }
 }
