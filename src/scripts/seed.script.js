@@ -32,7 +32,6 @@ export const cargarDatos = async () => {
         activo: true,
       },
     })
-    if (puntoCreado) console.log('Punto de Venta Matriz creado.')
 
     // 3. Cargar Usuarios (CORREGIDO: Sin warning de rolNombre)
     const claveHasheada = await bcrypUtils.hashearClave(envsConfig.PASSWORD_ADMIN_DEFAULT)
@@ -88,8 +87,6 @@ export const cargarDatos = async () => {
       })
     }
 
-    // 6. Vincular Premios al Punto de Venta Matriz
-    console.log('Asignando premios al punto de venta matriz...')
     for (const s of suertesCreadas) {
       const valorPremio =
         s.cantidad === 2
@@ -108,8 +105,6 @@ export const cargarDatos = async () => {
         },
       })
     }
-
-    console.log('--- PROCESO DE CARGA Y DETALLES COMPLETADO ---')
   } catch (error) {
     console.error('Error crítico en el seed de datos:', error)
   }

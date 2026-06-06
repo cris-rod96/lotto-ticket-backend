@@ -145,8 +145,6 @@ const listarAbiertos = async (params = {}) => {
   const limit = parseInt(p.limit, 10) || 10
   const offset = (page - 1) * limit
 
-  console.log(params)
-
   // 1. Definimos los estados válidos según tu modelo
   const estadosValidos = ['Abierto', 'Cerrado', 'Finalizado']
 
@@ -164,8 +162,6 @@ const listarAbiertos = async (params = {}) => {
   if (p.jornada && p.jornada !== 'Todos') whereConditions.jornada = p.jornada
   if (p.CifraId && p.CifraId !== 'Todos') whereConditions.CifraId = p.CifraId
   if (p.fechaSorteo) whereConditions.fechaSorteo = p.fechaSorteo
-
-  console.log("DEBUG FINAL (donde no debe aparecer 'Todos'):", whereConditions)
 
   const { count, rows: sorteos } = await Sorteos.findAndCountAll({
     where: whereConditions,

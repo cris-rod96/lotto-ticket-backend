@@ -53,13 +53,8 @@ const listarPorPunto = async (req, res) => {
 
 const listarAbiertos = async (req, res) => {
   try {
-    // 1. Extraemos los parámetros de forma segura
     const params = req.query || {}
 
-    // 2. Imprimimos para depurar: Si aquí sale undefined, es tu frontend/router
-    console.log('Controlador - Parámetros recibidos:', params)
-
-    // 3. Llamamos al servicio pasando el objeto completo
     const { code, sorteos, totalItems, totalPages, currentPage } =
       await sorteoServices.listarAbiertos(params)
 
