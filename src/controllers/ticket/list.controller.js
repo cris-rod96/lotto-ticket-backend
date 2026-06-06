@@ -2,22 +2,13 @@ import { ticketServices } from '../../services/index.services.js'
 
 const listarTickets = async (req, res) => {
   try {
-    const {
-      page,
-      limit,
-      PuntoVentaId,
-      fechaSorteo,
-      estadoLiquidacion,
-      codigo,
-      fechaInicio,
-      fechaFin,
-    } = req.query
+    const { page, limit, PuntoVentaId, estadoLiquidacion, codigo, fechaInicio, fechaFin } =
+      req.query
 
     const { code, message, data } = await ticketServices.listarTickets({
       page,
       limit,
       PuntoVentaId,
-      fechaSorteo,
       estadoLiquidacion,
       codigo,
       fechaInicio,
@@ -34,9 +25,16 @@ const listarPorPuntoDeVenta = async (req, res) => {
   try {
     const { id } = req.params
     // Aseguramos que lleguen valores, aunque sean undefined
-    const { page, limit, estado, fecha } = req.query
+    const { page, limit, estado, fechaInicio, fechaFin, codigo } = req.query
 
-    const result = await ticketServices.listarPorPuntoDeVenta(id, { page, limit, estado, fecha })
+    const result = await ticketServices.listarPorPuntoDeVenta(id, {
+      page,
+      limit,
+      estado,
+      fechaInicio,
+      fechaFin,
+      codigo,
+    })
 
     // Si el servicio devuelve algo distinto a 200, respondemos con el error
     if (result.code !== 200) {

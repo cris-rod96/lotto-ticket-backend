@@ -19,8 +19,7 @@ const listarTickets = async (queryParams = {}) => {
     const limit = parseInt(queryParams.limit, 10) || 8
     const offset = (page - 1) * limit
 
-    const { PuntoVentaId, fechaSorteo, estadoLiquidacion, codigo, fechaInicio, fechaFin } =
-      queryParams
+    const { PuntoVentaId, estadoLiquidacion, codigo, fechaInicio, fechaFin } = queryParams
 
     const whereTicket = {}
     if (codigo) {
@@ -42,11 +41,6 @@ const listarTickets = async (queryParams = {}) => {
       }
     }
 
-    const whereSorteo = {}
-    if (fechaSorteo && fechaSorteo !== 'Todos') {
-      whereSorteo.fechaSorteo = fechaSorteo
-    }
-
     if (fechaInicio && fechaFin) {
       whereTicket.createdAt = {
         [Op.between]: [new Date(fechaInicio), new Date(fechaFin)],
@@ -66,12 +60,27 @@ const listarTickets = async (queryParams = {}) => {
       include: [
         {
           model: Sorteos,
-          where: whereSorteo,
-          include: [Catalogos, Cifras],
+          include: [
+            Catalogos,
+            Cifras,
+            {
+              model: Resultados,
+              include: [
+                {
+                  model: DetallesResultado,
+                  include: [
+                    { model: Suertes, include: [{ model: DetallesSuerte, required: false }] },
+                  ],
+                },
+              ],
+            },
+          ],
         },
         { model: PuntosVenta, attributes: ['nombre'] },
         { model: Usuarios, attributes: ['nombresCompletos'] },
-        { model: DetallesTicket },
+        {
+          model: DetallesTicket,
+        },
       ],
       order: [['createdAt', 'DESC']],
       limit: limit,
@@ -99,47 +108,63 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
     const puntoVenta = await PuntosVenta.findByPk(id)
     if (!puntoVenta) return { code: 400, message: 'Punto de venta no encontrado' }
 
-    // 1. Parámetros de paginación
-    const page = parseInt(queryParams.page, 10) || 1
-    const limit = parseInt(queryParams.limit, 10) || 8
+    const { page = 1, limit = 8, codigo, estado, fechaInicio, fechaFin } = queryParams
     const offset = (page - 1) * limit
 
-    // 2. Construcción dinámica del WHERE
+    // 1. Construcción dinámica del WHERE
     const whereConditions = { PuntoVentaId: id }
 
-    // Filtrar por estado del ticket
-    if (queryParams.estado && queryParams.estado !== 'Todos') {
-      if (queryParams.estado === 'Ganador_Pendiente') {
+    console.log(codigo)
+
+    if (codigo) {
+      whereConditions.codigo = { [Op.iLike]: `%${codigo}%` }
+    }
+
+    if (estado && estado !== 'Todos') {
+      if (estado === 'Ganador_Pendiente') {
         whereConditions.resultado = 'Ganador'
         whereConditions.estado = 'Pendiente'
-      } else if (queryParams.estado === 'Ganador_Pagado') {
+      } else if (estado === 'Ganador_Pagado') {
         whereConditions.resultado = 'Ganador'
         whereConditions.estado = 'Pagado'
-      } else if (queryParams.estado === 'Pendiente' || queryParams.estado === 'No Ganador') {
-        whereConditions.resultado = queryParams.estado
+      } else if (estado === 'Pendiente' || estado === 'No Ganador') {
+        whereConditions.resultado = estado
       }
     }
 
-    // Filtrar por fecha del sorteo (se debe incluir la relación de Sorteos)
-    const sorteoInclude = {
-      model: Sorteos,
+    // Lógica de fechas (solo fechaInicio y fechaFin)
+    if (fechaInicio && fechaFin) {
+      whereConditions.createdAt = { [Op.between]: [new Date(fechaInicio), new Date(fechaFin)] }
+    } else if (fechaInicio) {
+      whereConditions.createdAt = { [Op.gte]: new Date(fechaInicio) }
+    } else if (fechaFin) {
+      whereConditions.createdAt = { [Op.lte]: new Date(fechaFin) }
+    }
+
+    // 2. Consulta a la base de datos
+    const { count, rows } = await Tickets.findAndCountAll({
+      where: whereConditions,
       include: [
-        Catalogos,
-        Cifras,
         {
-          model: Resultados,
+          model: Sorteos,
           include: [
+            Catalogos,
+            Cifras,
             {
-              model: DetallesResultado,
+              model: Resultados,
               include: [
                 {
-                  model: Suertes,
+                  model: DetallesResultado,
                   include: [
                     {
-                      model: DetallesSuerte,
-                      // Aquí aplicamos el filtro por el ID del Punto de Venta
-                      where: { PuntoVentaId: id },
-                      required: false, // Usamos false para no excluir suertes que no tengan detalle en este punto
+                      model: Suertes,
+                      include: [
+                        {
+                          model: DetallesSuerte,
+                          where: { PuntoVentaId: id },
+                          required: false,
+                        },
+                      ],
                     },
                   ],
                 },
@@ -147,24 +172,12 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
             },
           ],
         },
-      ],
-    }
-
-    if (queryParams.fecha && queryParams.fecha !== 'Todos') {
-      sorteoInclude.where = { fechaSorteo: queryParams.fecha }
-    }
-
-    // 3. Consulta paginada a la base de datos
-    const { count, rows } = await Tickets.findAndCountAll({
-      where: whereConditions,
-      include: [
-        sorteoInclude, // Incluimos sorteo con el filtro de fecha aplicado si existe
         { model: PuntosVenta },
         { model: Usuarios },
         { model: DetallesTicket },
       ],
       order: [['createdAt', 'DESC']],
-      limit: limit,
+      limit: parseInt(limit, 10),
       offset: offset,
       distinct: true,
     })
@@ -175,7 +188,7 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
         tickets: rows,
         totalItems: count,
         totalPages: Math.ceil(count / limit),
-        currentPage: page,
+        currentPage: parseInt(page, 10),
       },
     }
   } catch (error) {
