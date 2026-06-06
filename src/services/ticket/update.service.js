@@ -4,6 +4,7 @@ import {
   Cifras,
   Clientes,
   DetallesResultado,
+  DetallesSuerte,
   DetallesTicket,
   Ganadores,
   Movimientos,
@@ -16,7 +17,6 @@ import {
   Tickets,
   Usuarios,
 } from '../../lib/db.lib.js'
-import DetallesSuerte from '../../models/detalle-suerte/detalleSuerte.model.js'
 
 // const restarDiasHabiles = (fecha, dias) => {
 //   let fechaResult = new Date(fecha)
@@ -204,6 +204,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
 
   // 9. LECTURA DE DATOS (Fuera del try/catch de la transacción)
   try {
+    const ticket = await Tickets.findByPk(ticketId)
     const cajaFinal = await Cajas.findByPk(cajaId)
     const ticketPagadoCompleto = await Tickets.findByPk(ticketId, {
       include: [
@@ -227,7 +228,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
                       include: [
                         {
                           model: DetallesSuerte,
-                          where: { PuntoVentaId: ticketId.PuntoVentaId },
+                          where: { PuntoVentaId: ticket.PuntoVentaId },
                           required: false,
                         },
                       ],
@@ -248,6 +249,7 @@ const pagarTicket = async (ticketId, usuarioId, cajaId) => {
       ticket: ticketPagadoCompleto,
     }
   } catch (readError) {
+    console.log(readError)
     // Si llegamos aquí, el pago ya se guardó, pero falló la carga de datos para la UI
     return {
       code: 200,
