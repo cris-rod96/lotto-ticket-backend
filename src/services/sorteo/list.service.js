@@ -6,13 +6,14 @@ const listarTodos = async (params = {}) => {
   const limit = parseInt(params.limit, 10) || 10
   const offset = (page - 1) * limit
 
-  const { CatalogoId, jornada, CifraId, estado, fechaSorteo } = params
+  const { CatalogoId, jornada, CifraId, estado, fechaSorteo, numero } = params
 
   const whereConditions = {}
   if (CatalogoId && CatalogoId !== 'Todos') whereConditions.CatalogoId = CatalogoId
   if (jornada && jornada !== 'Todos') whereConditions.jornada = jornada
   if (CifraId && CifraId !== 'Todos') whereConditions.CifraId = CifraId
   if (estado && estado !== 'Todos') whereConditions.estado = estado
+  if (numero && numero !== 'Todos') whereConditions.numero = numero
   if (fechaSorteo) whereConditions.fechaSorteo = fechaSorteo
 
   const { count, rows: sorteos } = await Sorteos.findAndCountAll({
