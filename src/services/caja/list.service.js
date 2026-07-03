@@ -1,45 +1,88 @@
-import { Op } from 'sequelize'
-import { Cajas, Movimientos, PuntosVenta, Tickets, Usuarios } from '../../lib/db.lib.js'
+import { Op } from "sequelize";
+import {
+  Cajas,
+  Movimientos,
+  PuntosVenta,
+  sq,
+  Tickets,
+  Usuarios,
+} from "../../lib/db.lib.js";
 
 const obtenerCajasAbiertas = async () => {
   const cajas = await Cajas.findAll({
     where: {
-      estado: 'Abierta',
+      estado: "Abierta",
     },
-    order: [['createdAt', 'DESC']],
-  })
+    order: [["createdAt", "DESC"]],
+  });
 
-  return { code: 200, cajas }
-}
+  return { code: 200, cajas };
+};
+
+// const obtenerCajaAbierta = async (PuntoVentaId) => {
+//   const puntoVenta = await PuntosVenta.findByPk(PuntoVentaId)
+//   if (!puntoVenta) return { code: 400, message: 'No se encontró el punto de venta indicado' }
+//   const caja = await Cajas.findOne({
+//     where: {
+//       PuntoVentaId,
+//       estado: 'Abierta',
+//     },
+//     include: [
+//       {
+//         model: Usuarios,
+//         attributes: ['id', 'nombresCompletos', 'PuntoVentaId'],
+//       },
+//       {
+//         model: Movimientos,
+//         include: [
+//           {
+//             model: Usuarios,
+//             attributes: ['id', 'nombresCompletos'],
+//           },
+//         ],
+//       },
+//     ],
+//     order: [['createdAt', 'DESC']],
+//   })
+
+//   return { code: 200, caja }
+// }
 
 const obtenerCajaAbierta = async (PuntoVentaId) => {
-  const puntoVenta = await PuntosVenta.findByPk(PuntoVentaId)
-  if (!puntoVenta) return { code: 400, message: 'No se encontró el punto de venta indicado' }
+  const puntoVenta = await PuntosVenta.findByPk(PuntoVentaId);
+  if (!puntoVenta)
+    return { code: 400, message: "No se encontró el punto de venta indicado" };
+
   const caja = await Cajas.findOne({
     where: {
       PuntoVentaId,
-      estado: 'Abierta',
+      estado: "Abierta",
+    },
+    attributes: {
+      include: [
+        [
+          // Contamos los movimientos directamente en la base de datos
+          sq.literal(`(
+            SELECT COUNT(*)
+            FROM "Movimientos" AS m
+            WHERE m."CajaId" = "Cajas"."id"
+          )`),
+          "totalMovimientos",
+        ],
+      ],
     },
     include: [
       {
         model: Usuarios,
-        attributes: ['id', 'nombresCompletos', 'PuntoVentaId'],
+        attributes: ["id", "nombresCompletos", "PuntoVentaId"],
       },
-      {
-        model: Movimientos,
-        include: [
-          {
-            model: Usuarios,
-            attributes: ['id', 'nombresCompletos'],
-          },
-        ],
-      },
+      // HE ELIMINADO EL INCLUDE DE MOVIMIENTOS AQUI para evitar el error de cuota
     ],
-    order: [['createdAt', 'DESC']],
-  })
+    order: [["createdAt", "DESC"]],
+  });
 
-  return { code: 200, caja }
-}
+  return { code: 200, caja };
+};
 
 const listarTodas = async () => {
   const cajas = await Cajas.findAll({
@@ -55,74 +98,77 @@ const listarTodas = async () => {
         model: PuntosVenta,
       },
     ],
-    order: [['createdAt', 'DESC']],
-  })
+    order: [["createdAt", "DESC"]],
+  });
 
-  return { code: 200, cajas }
-}
+  return { code: 200, cajas };
+};
 
 const listarPorPuntoDeVenta = async (id, options = {}) => {
   try {
-    const { fechaInicio, fechaFin, page = 1, limit = 10 } = options
-    const offset = (page - 1) * parseInt(limit)
+    const { fechaInicio, fechaFin, page = 1, limit = 10 } = options;
+    const offset = (page - 1) * parseInt(limit);
 
-    const fechaFiltro = {}
+    const fechaFiltro = {};
     if (fechaInicio && fechaFin) {
-      fechaFiltro.fechaApertura = { [Op.between]: [new Date(fechaInicio), new Date(fechaFin)] }
+      fechaFiltro.fechaApertura = {
+        [Op.between]: [new Date(fechaInicio), new Date(fechaFin)],
+      };
     } else if (fechaInicio) {
-      fechaFiltro.fechaApertura = { [Op.gte]: new Date(fechaInicio) }
+      fechaFiltro.fechaApertura = { [Op.gte]: new Date(fechaInicio) };
     }
 
     // A. Contar cajas SIN el include (así cuenta solo las cajas, no los movimientos)
     const totalCajas = await Cajas.count({
       where: { PuntoVentaId: id, ...fechaFiltro },
-    })
+    });
 
     // B. Traer las cajas con los movimientos (solo las de la página actual)
     const cajas = await Cajas.findAll({
       where: { PuntoVentaId: id, ...fechaFiltro },
       include: [{ model: Movimientos }],
-      order: [['fechaApertura', 'DESC']],
+      order: [["fechaApertura", "DESC"]],
       limit: parseInt(limit),
       offset: parseInt(offset),
-    })
+    });
 
     // C. Calcular totales globales (sumando solo lo que pertenece a este punto)
     // Buscamos todas las cajas del punto para sacar los IDs
     const todasLasCajas = await Cajas.findAll({
       where: { PuntoVentaId: id },
-      attributes: ['id'],
-    })
-    const cajaIds = todasLasCajas.map((c) => c.id)
+      attributes: ["id"],
+    });
+    const cajaIds = todasLasCajas.map((c) => c.id);
 
     const totalVentasGeneral =
-      (await Movimientos.sum('monto', {
-        where: { CajaId: { [Op.in]: cajaIds }, categoria: 'Venta Ticket' },
-      })) || 0
+      (await Movimientos.sum("monto", {
+        where: { CajaId: { [Op.in]: cajaIds }, categoria: "Venta Ticket" },
+      })) || 0;
 
     const totalPagadoGeneral =
-      (await Movimientos.sum('monto', {
-        where: { CajaId: { [Op.in]: cajaIds }, categoria: 'Pago Premio' },
-      })) || 0
+      (await Movimientos.sum("monto", {
+        where: { CajaId: { [Op.in]: cajaIds }, categoria: "Pago Premio" },
+      })) || 0;
 
     const totalDeudaGeneral =
-      (await Tickets.sum('montoTotalPremio', {
-        where: { PuntoVentaId: id, estado: 'Pendiente', resultado: 'Ganador' },
-      })) || 0
+      (await Tickets.sum("montoTotalPremio", {
+        where: { PuntoVentaId: id, estado: "Pendiente", resultado: "Ganador" },
+      })) || 0;
 
     // Procesar cajas
     const cajasProcesadas = cajas.map((caja) => {
-      const c = caja.toJSON()
-      const v = c.Movimientos.filter((m) => m.categoria === 'Venta Ticket').reduce(
-        (s, m) => s + parseFloat(m.monto),
-        0
-      )
-      const p = c.Movimientos.filter((m) => m.categoria === 'Pago Premio').reduce(
-        (s, m) => s + parseFloat(m.monto),
-        0
-      )
-      return { ...c, stats: { totalVentas: v, totalPagado: p, balanceNeto: v - p } }
-    })
+      const c = caja.toJSON();
+      const v = c.Movimientos.filter(
+        (m) => m.categoria === "Venta Ticket",
+      ).reduce((s, m) => s + parseFloat(m.monto), 0);
+      const p = c.Movimientos.filter(
+        (m) => m.categoria === "Pago Premio",
+      ).reduce((s, m) => s + parseFloat(m.monto), 0);
+      return {
+        ...c,
+        stats: { totalVentas: v, totalPagado: p, balanceNeto: v - p },
+      };
+    });
 
     return {
       code: 200,
@@ -138,9 +184,14 @@ const listarPorPuntoDeVenta = async (id, options = {}) => {
         totalDeudaGeneral,
         balanceGlobal: totalVentasGeneral - totalPagadoGeneral,
       },
-    }
+    };
   } catch (error) {
-    return { code: 500, message: error.message }
+    return { code: 500, message: error.message };
   }
-}
-export { listarPorPuntoDeVenta, listarTodas, obtenerCajaAbierta, obtenerCajasAbiertas }
+};
+export {
+  listarPorPuntoDeVenta,
+  listarTodas,
+  obtenerCajaAbierta,
+  obtenerCajasAbiertas,
+};
