@@ -66,7 +66,7 @@ server.listen(envsConfig.PORT, () => {
 
       // MODIFICADO PARA PRUEBA: Se ejecutará exactamente a las 18:40 de Ecuador
       cron.schedule(
-        "*/3 * * * *",
+        "* 10,17 * * *",
         async () => {
           try {
             await backupUtils.ejecutarCopiaSeguridad();
