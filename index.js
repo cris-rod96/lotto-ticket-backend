@@ -26,7 +26,7 @@ server.listen(envsConfig.PORT, () => {
       cargarDatos();
 
       // 1. CRON MINUTAL: Cierre de sorteos
-      cron.schedule("0 */3 * * *", async () => {
+      cron.schedule("* * * * *", async () => {
         try {
           const cerrados = await sorteoServices.verificarCierreSorteos();
           if (cerrados > 0) {
