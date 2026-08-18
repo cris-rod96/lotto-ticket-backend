@@ -6,7 +6,8 @@ const crearSorteo = async (req, res) => {
     const { code, message, data } = await sorteoServices.crearSorteo(dataBody)
     res.status(code).json(data ? { data, message } : { message })
   } catch (error) {
-    const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
+    const msg =
+      error.message || 'Error interno en el servidor. Intente de nuevo'
     req.status(500).json({
       message: msg,
     })
