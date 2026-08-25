@@ -19,34 +19,7 @@ const obtenerCajasAbiertas = async () => {
   return { code: 200, cajas };
 };
 
-// const obtenerCajaAbierta = async (PuntoVentaId) => {
-//   const puntoVenta = await PuntosVenta.findByPk(PuntoVentaId)
-//   if (!puntoVenta) return { code: 400, message: 'No se encontró el punto de venta indicado' }
-//   const caja = await Cajas.findOne({
-//     where: {
-//       PuntoVentaId,
-//       estado: 'Abierta',
-//     },
-//     include: [
-//       {
-//         model: Usuarios,
-//         attributes: ['id', 'nombresCompletos', 'PuntoVentaId'],
-//       },
-//       {
-//         model: Movimientos,
-//         include: [
-//           {
-//             model: Usuarios,
-//             attributes: ['id', 'nombresCompletos'],
-//           },
-//         ],
-//       },
-//     ],
-//     order: [['createdAt', 'DESC']],
-//   })
 
-//   return { code: 200, caja }
-// }
 
 const obtenerCajaAbierta = async (PuntoVentaId) => {
   const puntoVenta = await PuntosVenta.findByPk(PuntoVentaId);

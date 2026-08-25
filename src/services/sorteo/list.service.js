@@ -1,5 +1,12 @@
 import { Op } from 'sequelize'
-import { Catalogos, Cifras, DetallesTicket, Sorteos, Tickets, sq } from '../../lib/db.lib.js'
+import {
+  Catalogos,
+  Cifras,
+  DetallesTicket,
+  Sorteos,
+  Tickets,
+  sq,
+} from '../../lib/db.lib.js'
 
 const listarTodos = async (params = {}) => {
   const page = parseInt(params.page, 10) || 1
@@ -9,7 +16,8 @@ const listarTodos = async (params = {}) => {
   const { CatalogoId, jornada, CifraId, estado, fechaSorteo, numero } = params
 
   const whereConditions = {}
-  if (CatalogoId && CatalogoId !== 'Todos') whereConditions.CatalogoId = CatalogoId
+  if (CatalogoId && CatalogoId !== 'Todos')
+    whereConditions.CatalogoId = CatalogoId
   if (jornada && jornada !== 'Todos') whereConditions.jornada = jornada
   if (CifraId && CifraId !== 'Todos') whereConditions.CifraId = CifraId
   if (estado && estado !== 'Todos') whereConditions.estado = estado
@@ -18,7 +26,13 @@ const listarTodos = async (params = {}) => {
 
   const { count, rows: sorteos } = await Sorteos.findAndCountAll({
     where: whereConditions,
-    include: [Catalogos, Cifras, Tickets],
+    include: [
+      { model: Catalogos },
+      { model: Cifras },
+      {
+        model: Tickets,
+      },
+    ],
     order: [['createdAt', 'DESC']],
     limit: limit,
     offset: offset,
@@ -62,7 +76,9 @@ const listarPorPunto = async (puntoVentaId, params = {}) => {
 
     if (params.fechaDesde && params.fechaHasta) {
       // Ambos presentes: usamos Op.between
-      whereSorteo.fechaSorteo = { [Op.between]: [params.fechaDesde, params.fechaHasta] }
+      whereSorteo.fechaSorteo = {
+        [Op.between]: [params.fechaDesde, params.fechaHasta],
+      }
     } else if (params.fechaDesde) {
       // Solo desde: mayor o igual
       whereSorteo.fechaSorteo = { [Op.gte]: params.fechaDesde }
@@ -127,7 +143,7 @@ const listarPorPunto = async (puntoVentaId, params = {}) => {
         utilidadNeta: (recaudado - premios).toFixed(2),
         totalTickets: parseInt(statsTickets?.totalTickets || 0),
       }
-    })
+    }),
   )
 
   return {
@@ -158,7 +174,8 @@ const listarAbiertos = async (params = {}) => {
   }
 
   // 3. Resto de filtros
-  if (p.CatalogoId && p.CatalogoId !== 'Todos') whereConditions.CatalogoId = p.CatalogoId
+  if (p.CatalogoId && p.CatalogoId !== 'Todos')
+    whereConditions.CatalogoId = p.CatalogoId
   if (p.jornada && p.jornada !== 'Todos') whereConditions.jornada = p.jornada
   if (p.CifraId && p.CifraId !== 'Todos') whereConditions.CifraId = p.CifraId
   if (p.fechaSorteo) whereConditions.fechaSorteo = p.fechaSorteo
@@ -190,7 +207,8 @@ const listarCerrados = async (params = {}) => {
 
   // Forzamos que el estado siempre sea 'Cerrado'
   const whereConditions = { estado: 'Cerrado' }
-  if (CatalogoId && CatalogoId !== 'Todos') whereConditions.CatalogoId = CatalogoId
+  if (CatalogoId && CatalogoId !== 'Todos')
+    whereConditions.CatalogoId = CatalogoId
   if (jornada && jornada !== 'Todos') whereConditions.jornada = jornada
   if (CifraId && CifraId !== 'Todos') whereConditions.CifraId = CifraId
   if (fechaSorteo) whereConditions.fechaSorteo = fechaSorteo

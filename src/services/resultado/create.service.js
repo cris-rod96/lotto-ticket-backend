@@ -37,7 +37,10 @@ const registrarResultados = async (data) => {
     }
 
     const fechaDeCaducidad = calcularFechaExpiracion(sorteo.fechaSorteo)
-    const nuevoResultado = await Resultados.create({ SorteoId }, { transaction: t })
+    const nuevoResultado = await Resultados.create(
+      { SorteoId },
+      { transaction: t },
+    )
     let totalPremiosSorteo = 0
 
     // Bucle independiente por cada suerte enviada
@@ -61,9 +64,9 @@ const registrarResultados = async (data) => {
         {
           ResultadoId: nuevoResultado.id,
           SuerteId: res.SuerteId,
-          numeroGanador: res.numeroSorteado
+          numeroGanador: res.numeroSorteado,
         },
-        { transaction: t }
+        { transaction: t },
       )
 
       // 3. Procesamos los ganadores de ESTA suerte
@@ -76,8 +79,11 @@ const registrarResultados = async (data) => {
           transaction: t,
         })
 
-        const multiplicadorPremio = configuracionPremio ? parseFloat(configuracionPremio.premio) : 0
-        const valorPremio = parseFloat(detalle.montoApostado) * multiplicadorPremio
+        const multiplicadorPremio = configuracionPremio
+          ? parseFloat(configuracionPremio.premio)
+          : 0
+        const valorPremio =
+          parseFloat(detalle.montoApostado) * multiplicadorPremio
 
         await detalle.update({ montoPremio: valorPremio }, { transaction: t })
 
@@ -86,7 +92,7 @@ const registrarResultados = async (data) => {
             resultado: 'Ganador',
             montoTotalPremio: sq.literal(`"montoTotalPremio" + ${valorPremio}`),
           },
-          { where: { id: detalle.TicketId }, transaction: t }
+          { where: { id: detalle.TicketId }, transaction: t },
         )
 
         await Ganadores.create(
@@ -97,7 +103,7 @@ const registrarResultados = async (data) => {
             fechaCaducidad: fechaDeCaducidad,
             estadoPago: 'Pendiente',
           },
-          { transaction: t }
+          { transaction: t },
         )
 
         totalPremiosSorteo += valorPremio
@@ -111,10 +117,10 @@ const registrarResultados = async (data) => {
         where: {
           SorteoId,
           resultado: 'Pendiente',
-          estado: { [Op.in]: ['Pendiente', 'Anulado'] }
+          estado: { [Op.in]: ['Pendiente'] },
         },
-        transaction: t
-      }
+        transaction: t,
+      },
     )
 
     // 5. Cierre financiero del sorteo
@@ -122,9 +128,10 @@ const registrarResultados = async (data) => {
       {
         estado: 'Finalizado',
         montoPorPagar: totalPremiosSorteo,
-        utilidadNeta: parseFloat(sorteo.montoRecaudado || 0) - totalPremiosSorteo,
+        utilidadNeta:
+          parseFloat(sorteo.montoRecaudado || 0) - totalPremiosSorteo,
       },
-      { transaction: t }
+      { transaction: t },
     )
 
     await t.commit()
@@ -138,11 +145,9 @@ const registrarResultados = async (data) => {
         },
         {
           model: DetallesResultado,
-          // Si necesitas cargar las suertes dentro de los detalles para que el flyer 
+          // Si necesitas cargar las suertes dentro de los detalles para que el flyer
           // pueda acceder a la descripción de la suerte (ej: "1ra Suerte"), inclúyelas:
-          include: [
-            { model: Suertes }
-          ]
+          include: [{ model: Suertes }],
         },
       ],
     })
@@ -150,9 +155,8 @@ const registrarResultados = async (data) => {
     return {
       code: 201,
       message: 'Resultados procesados con éxito.',
-      resultado: resultadoFinal
+      resultado: resultadoFinal,
     }
-
   } catch (error) {
     if (t && !t.finished) {
       await t.rollback()
