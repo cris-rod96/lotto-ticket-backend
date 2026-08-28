@@ -19,7 +19,8 @@ const listarTickets = async (queryParams = {}) => {
     const limit = parseInt(queryParams.limit, 10) || 8
     const offset = (page - 1) * limit
 
-    const { PuntoVentaId, estadoLiquidacion, codigo, fechaInicio, fechaFin } = queryParams
+    const { PuntoVentaId, estadoLiquidacion, codigo, fechaInicio, fechaFin } =
+      queryParams
 
     const whereTicket = {}
     if (codigo) {
@@ -36,7 +37,10 @@ const listarTickets = async (queryParams = {}) => {
       } else if (estadoLiquidacion === 'Ganador_Pagado') {
         whereTicket.resultado = 'Ganador'
         whereTicket.estado = 'Pagado'
-      } else if (estadoLiquidacion === 'Pendiente' || estadoLiquidacion === 'No Ganador') {
+      } else if (
+        estadoLiquidacion === 'Pendiente' ||
+        estadoLiquidacion === 'No Ganador'
+      ) {
         whereTicket.resultado = estadoLiquidacion
       }
     }
@@ -57,29 +61,54 @@ const listarTickets = async (queryParams = {}) => {
 
     const { count, rows } = await Tickets.findAndCountAll({
       where: whereTicket,
+      attributes: [
+        'id',
+        'codigo',
+        'estado',
+        'resultado',
+        'montoTotalPremio',
+        'createdAt',
+        'PuntoVentaId',
+      ],
       include: [
         {
           model: Sorteos,
+          attributes: [
+            'id',
+            'numero',
+            'jornada',
+            'fechaSorteo',
+            'horaSorteo',
+            'CatalogoId',
+            'CifraId',
+          ],
           include: [
-            Catalogos,
-            Cifras,
-            {
+            { model: Catalogos, attributes: ['id', 'nombre', 'pais'] },
+            { model: Cifras, attributes: ['id', 'cantidad'] },
+            /*{
               model: Resultados,
+              attributes: ['id'],
               include: [
                 {
                   model: DetallesResultado,
+                  attributes: ['id'],
                   include: [
-                    { model: Suertes, include: [{ model: DetallesSuerte, required: false }] },
+                    {
+                      model: Suertes,
+                      attributes: ['id'],
+                      include: [{ model: DetallesSuerte, required: false }],
+                    },
                   ],
                 },
               ],
-            },
+            },*/
           ],
         },
-        { model: PuntosVenta, attributes: ['nombre'] },
-        { model: Usuarios, attributes: ['nombresCompletos'] },
+        { model: PuntosVenta, attributes: ['id', 'nombre'] },
+        { model: Usuarios, attributes: ['id', 'nombresCompletos'] },
         {
           model: DetallesTicket,
+          attributes: ['id', 'numeroJugado', 'montoApostado', 'TicketId'],
         },
       ],
       order: [['createdAt', 'DESC']],
@@ -106,9 +135,17 @@ const listarTickets = async (queryParams = {}) => {
 const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
   try {
     const puntoVenta = await PuntosVenta.findByPk(id)
-    if (!puntoVenta) return { code: 400, message: 'Punto de venta no encontrado' }
+    if (!puntoVenta)
+      return { code: 400, message: 'Punto de venta no encontrado' }
 
-    const { page = 1, limit = 8, codigo, estado, fechaInicio, fechaFin } = queryParams
+    const {
+      page = 1,
+      limit = 8,
+      codigo,
+      estado,
+      fechaInicio,
+      fechaFin,
+    } = queryParams
     const offset = (page - 1) * limit
 
     // 1. Construcción dinámica del WHERE
@@ -134,7 +171,9 @@ const listarPorPuntoDeVenta = async (id, queryParams = {}) => {
 
     // Lógica de fechas (solo fechaInicio y fechaFin)
     if (fechaInicio && fechaFin) {
-      whereConditions.createdAt = { [Op.between]: [new Date(fechaInicio), new Date(fechaFin)] }
+      whereConditions.createdAt = {
+        [Op.between]: [new Date(fechaInicio), new Date(fechaFin)],
+      }
     } else if (fechaInicio) {
       whereConditions.createdAt = { [Op.gte]: new Date(fechaInicio) }
     } else if (fechaFin) {
