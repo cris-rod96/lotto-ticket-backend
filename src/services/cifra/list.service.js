@@ -7,4 +7,14 @@ const listarTodas = async () => {
   return { code: 200, cifras }
 }
 
-export { listarTodas }
+const listarActivas = async () => {
+  const cifras = await Cifras.findAll({
+    where: {
+      activo: true,
+    },
+    order: [['cantidad', 'ASC']],
+  })
+  return { code: 200, cifras }
+}
+
+export { listarTodas, listarActivas }

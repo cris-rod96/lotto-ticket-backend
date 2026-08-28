@@ -30,7 +30,11 @@ const crearSorteo = async (data) => {
   let listaCifras = []
   if (ambasCifras) {
     // Obtenemos todos los registros de Cifras
-    const todasLasCifras = await Cifras.findAll()
+    const todasLasCifras = await Cifras.findAll({
+      where: {
+        activo: true,
+      },
+    })
     listaCifras = todasLasCifras.map((c) => c.id)
   } else {
     listaCifras = [CifraId]
@@ -84,7 +88,7 @@ const crearSorteo = async (data) => {
   return {
     code: 201,
     message: ambasCifras
-      ? 'Sorteos creados exitosamente para ambas cifras'
+      ? 'Sorteos creados exitosamente para todas las cifras'
       : 'Sorteo creado exitosamente',
     data: sorteosCreados,
   }
