@@ -14,6 +14,8 @@ const crearSorteo = async (data) => {
     ambasCifras,
   } = data
 
+  console.log(data)
+
   // 1. Validación inicial
   if (
     !numero ||
@@ -43,7 +45,7 @@ const crearSorteo = async (data) => {
   // 3. Validación de sorteo activo para cada cifra
   for (const id of listaCifras) {
     const sorteoActivo = await Sorteos.findOne({
-      where: { CatalogoId, CifraId: id, estado: { [Op.ne]: 'Finalizado' } },
+      where: { CatalogoId, CifraId: id, jornada, estado: { [Op.ne]: 'Finalizado' } },
     })
     if (sorteoActivo) {
       return {

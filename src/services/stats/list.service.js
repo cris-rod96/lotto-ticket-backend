@@ -12,7 +12,15 @@ import {
 
 const getGlobalStats = async () => {
   try {
-    const hoy = new Date().toISOString().split('T')[0]
+
+    const hoy = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Guayaquil',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      
+    }).format(new Date());
+
 
     // 1. Ventas Netas (Sumando detalles de tickets no anulados creados hoy)
     // Agregamos attributes: [] para que Postgres no intente agrupar por columnas de Ticket

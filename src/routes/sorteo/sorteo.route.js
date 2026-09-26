@@ -15,4 +15,6 @@ sorteoRouter.patch('/actualizar-sorteo/:id', sorteoControllers.actualizarSorteo)
 
 sorteoRouter.delete('/eliminar/:id', sorteoControllers.eliminarSorteo)
 
+sorteoRouter.get("/listar/para-tickets", sorteoControllers.listarParaVenderTickets)
+
 export default sorteoRouter
