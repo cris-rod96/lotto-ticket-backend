@@ -155,6 +155,20 @@ const listarPorPunto = async (puntoVentaId, params = {}) => {
   }
 }
 
+const listarParaVenderTickets = async () => {
+  const sorteos = await Sorteos.findAll({
+    where: {
+      estado: "Abierto"
+    },
+    include: [Catalogos, Cifras, Tickets]
+  })
+  return {
+    code: 200,
+    sorteos
+  }
+}
+
+
 const listarAbiertos = async (params = {}) => {
   const p = params || {}
   const page = parseInt(p.page, 10) || 1
@@ -233,4 +247,4 @@ const listarCerrados = async (params = {}) => {
   }
 }
 
-export { listarAbiertos, listarCerrados, listarPorPunto, listarTodos }
+export { listarAbiertos, listarCerrados, listarPorPunto, listarTodos, listarParaVenderTickets }

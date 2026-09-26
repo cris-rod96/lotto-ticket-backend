@@ -18,7 +18,7 @@ server.listen(envsConfig.PORT, () => {
   sq.sync({
     logging: false,
     force: false, // Cambiado a false para no borrar tus tickets ganadores
-    alter: false,
+    alter: true,
   })
     .then(() => {
       console.log('Base de datos sincronizada con éxito')
@@ -64,7 +64,7 @@ server.listen(envsConfig.PORT, () => {
 
       // MODIFICADO PARA PRUEBA: Se ejecutará exactamente a las 18:40 de Ecuador
       cron.schedule(
-        '* 10,17 * * *',
+        '0 10,17 * * *',
         async () => {
           try {
             await backupUtils.ejecutarCopiaSeguridad()

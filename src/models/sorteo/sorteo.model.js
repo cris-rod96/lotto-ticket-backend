@@ -17,7 +17,7 @@ const SorteoModel = (sq) => {
 
       jornada: {
         type: DataTypes.ENUM,
-        values: ['Matutina', 'Vespertina', 'Nocturna'],
+        values: ['Mañanera','Matutina', 'Vespertina', 'Nocturna'],
         allowNull: false,
       },
 

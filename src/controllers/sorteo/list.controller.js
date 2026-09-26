@@ -94,4 +94,23 @@ const listarCerrados = async (req, res) => {
   }
 }
 
-export { listarAbiertos, listarCerrados, listarPorPunto, listarTodos }
+
+const listarParaVenderTickets = async (req, res) => {
+  try {
+    // Pasamos req.query idéntico a los anteriores
+    const { code, sorteos } =
+      await sorteoServices.listarParaVenderTickets()
+
+    res.status(code).json({
+      sorteos,
+
+    })
+  } catch (error) {
+    const msg = error.message || 'Error interno en el servidor. Intente de nuevo'
+    res.status(500).json({
+      message: msg,
+    })
+  }
+}
+
+export { listarAbiertos, listarCerrados, listarPorPunto, listarTodos, listarParaVenderTickets }
