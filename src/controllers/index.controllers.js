@@ -3,6 +3,7 @@ import backupControllers from './backup/index.controller.js'
 import cajaControllers from './caja/index.controller.js'
 import catalogoControllers from './catalogo/index.controller.js'
 import cifraControllers from './cifra/index.controller.js'
+import cupoJornadaControllers from "./cupo-jornada/index.controller.js"
 import movimientoControllers from './movimiento/index.controller.js'
 import puntoVentaControllers from './punto-venta/index.controller.js'
 import resultadoControllers from './resultado/index.controller.js'
@@ -13,12 +14,15 @@ import suerteControllers from './suerte/index.controller.js'
 import ticketControllers from './ticket/index.controller.js'
 import usuarioControllers from './usuario/index.controller.js'
 
+
+
 export {
   authControllers,
   backupControllers,
   cajaControllers,
   catalogoControllers,
   cifraControllers,
+  cupoJornadaControllers,
   movimientoControllers,
   puntoVentaControllers,
   resultadoControllers,
