@@ -3,6 +3,7 @@ import backupServices from './backups/index.service.js'
 import cajaServices from './caja/index.service.js'
 import catalogoService from './catalogo/index.service.js'
 import cifraServices from './cifra/index.service.js'
+import cupoJornadaServices from "./cupo-jornadas/index.service.js"
 import movimientoServices from './movimiento/index.service.js'
 import puntoVentaServices from './punto-venta/index.service.js'
 import resultadoServices from './resultado/index.service.js'
@@ -13,12 +14,15 @@ import suerteServices from './suerte/index.service.js'
 import ticketServices from './ticket/index.service.js'
 import usuarioServices from './usuario/index.service.js'
 
+
+
 export {
   authServices,
   backupServices,
   cajaServices,
   catalogoService,
   cifraServices,
+  cupoJornadaServices,
   movimientoServices,
   puntoVentaServices,
   resultadoServices,

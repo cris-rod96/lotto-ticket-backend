@@ -4,6 +4,7 @@ import backupRouter from './backup/backup.route.js'
 import cajaRouter from './caja/caja.route.js'
 import catalogoRouter from './catalogo/catalogo.route.js'
 import cifraRouter from './cifra/cifra.route.js'
+import cupoJornadaRouter from './cupo-jornada/cupoJornada.route.js'
 import movimientoRouter from './movimiento/movimiento.route.js'
 import puntoVentaRouter from './punto-venta/puntoVenta.route.js'
 import resultadoRouter from './resultado/resultado.route.js'
@@ -18,6 +19,7 @@ const rootRouter = Router()
 
 rootRouter.use('/catalogos', catalogoRouter)
 rootRouter.use('/cifras', cifraRouter)
+rootRouter.use("/cupo-jornadas", cupoJornadaRouter)
 rootRouter.use('/roles', rolRouter)
 rootRouter.use('/suertes', suerteRouter)
 rootRouter.use('/puntos-ventas', puntoVentaRouter)

@@ -3,6 +3,7 @@ import CajaModel from './caja/caja.model.js'
 import CatalogoModel from './catalogo/catalogo.model.js'
 import CifraModel from './cifra/cifra.model.js'
 import ClienteModel from './cliente/cliente.model.js'
+import CupoJornadas from './cupo-jornadas/cupoJornada.model.js'
 import DetalleResultadoModel from './detalle-resultado/detalleResultado.model.js'
 import DetallesSuerte from './detalle-suerte/detalleSuerte.model.js'
 import DetalleTicketModel from './detalle-ticket/detalleTicket.model.js'
@@ -21,6 +22,7 @@ export const models = [
   UsuarioModel,
   CatalogoModel,
   CifraModel,
+  CupoJornadas,
   SuerteModel,
   SorteoModel,
   TicketModel,
