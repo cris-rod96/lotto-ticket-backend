@@ -1,6 +1,8 @@
-import { registrarCupoJornada } from "./create.service.js"
-
-
+import { registrarCupoJornada } from "./create.service.js";
+import { listarTodos } from "./list.service.js";
+import { actualizarCupo } from "./update.service.js";
 export default {
-  registrarCupoJornada
-}
+  registrarCupoJornada,
+  listarTodos,
+  actualizarCupo,
+};
