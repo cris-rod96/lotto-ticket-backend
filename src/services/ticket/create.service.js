@@ -36,6 +36,7 @@ const obtenerCupoMaximoPorJornada = async (sorteo, transaction = null) => {
 };
 
 const venderTicket = async (data) => {
+  console.info(data);
   const t = await sq.transaction();
 
   try {
