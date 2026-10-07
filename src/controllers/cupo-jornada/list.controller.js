@@ -1,9 +1,11 @@
-import { catalogoService } from "../../services/index.services.js";
+import { cupoJornadaServices } from "../../services/index.services.js";
 
 const listarTodos = async (req, res) => {
   try {
-    const { code, catalogos } = await catalogoService.listarTodos();
-    res.status(code).json({ catalogos });
+    const { code, cuposJornadas } = await cupoJornadaServices.listarTodos();
+    res.status(code).json({
+      cuposJornadas,
+    });
   } catch (error) {
     const msg =
       error.message ||

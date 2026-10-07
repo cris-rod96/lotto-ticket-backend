@@ -1,8 +1,8 @@
 import { registrarCupoJornada } from "./create.controller.js";
-
-
-
+import { listarTodos } from "./list.controller.js";
+import { actualizarCupo } from "./update.controller.js";
 export default {
-  registrarCupoJornada
-}
-
+  actualizarCupo,
+  registrarCupoJornada,
+  listarTodos,
+};

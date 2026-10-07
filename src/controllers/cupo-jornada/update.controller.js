@@ -1,10 +1,15 @@
 import { cupoJornadaServices } from "../../services/index.services.js";
 
-export const registrarCupoJornada = async (req, res) => {
+export const actualizarCupo = async (req, res) => {
   try {
-    const data = req.body;
-    const { code, message } =
-      await cupoJornadaServices.registrarCupoJornada(data);
+    const { id } = req.params;
+    const { cupoMaximo } = req.body;
+
+    const { code, message } = await cupoJornadaServices.actualizarCupo(
+      id,
+      cupoMaximo,
+    );
+
     res.status(code).json({
       message,
     });
