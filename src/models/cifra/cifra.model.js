@@ -1,8 +1,8 @@
-import { DataTypes } from 'sequelize'
+import { DataTypes } from "sequelize";
 
 const CifraModel = (sq) => {
   sq.define(
-    'Cifras',
+    "Cifras",
     {
       id: {
         type: DataTypes.UUID,
@@ -25,7 +25,7 @@ const CifraModel = (sq) => {
 
       cupoMaximoPorNumero: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
+        allowNull: true,
         defaultValue: 0.0,
       },
 
@@ -35,10 +35,10 @@ const CifraModel = (sq) => {
       },
     },
     {
-      tableName: 'Cifras',
+      tableName: "Cifras",
       timestamps: true,
-    }
-  )
-}
+    },
+  );
+};
 
-export default CifraModel
+export default CifraModel;
